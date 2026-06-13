@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北京鸿鹄国际旅行社有限公司</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.6; color: #333; }
+        :root { --primary-color: #0A2463; --secondary-color: #E94560; --accent-color: #3E92CC; }
+        .navbar { position: fixed; top: 0; width: 100%; background: rgba(10, 36, 99, 0.95); z-index: 1000; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+        .navbar .container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; }
+        .logo { display: flex; align-items: center; color: #fff; font-size: 1.5rem; font-weight: bold; }
+        .logo span { color: #E94560; }
+        .nav-links { display: flex; list-style: none; }
+        .nav-links li { margin-left: 2rem; }
+        .nav-links a { color: #fff; text-decoration: none; font-weight: 500; transition: color 0.3s ease; }
+        .nav-links a:hover { color: #E94560; }
+        .nav-links .active { color: #E94560; }
+        .menu-toggle { display: none; color: #fff; font-size: 1.5rem; cursor: pointer; }
+        .hero { margin-top: 70px; position: relative; height: 600px; overflow: hidden; }
+        .hero-slides { position: relative; width: 100%; height: 100%; }
+        .hero-slide { position: absolute; width: 100%; height: 100%; opacity: 0; transition: opacity 1s ease-in-out; }
+        .hero-slide.active { opacity: 1; }
+        .hero-slide img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 36, 99, 0.5); display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; text-align: center; }
+        .hero-title { font-size: 3.5rem; font-weight: bold; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+        .hero-subtitle { font-size: 1.5rem; margin-bottom: 2rem; opacity: 0.9; }
+        .hero-btn { padding: 12px 30px; background: #E94560; color: #fff; text-decoration: none; border-radius: 50px; font-weight: 600; transition: all 0.3s ease; }
+        .hero-btn:hover { background: #c73550; transform: translateY(-2px); }
+        .hero-dots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; }
+        .hero-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); margin: 0 8px; cursor: pointer; transition: background 0.3s ease; }
+        .hero-dot.active { background: #E94560; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .section { padding: 4rem 0; }
+        .section-title { text-align: center; font-size: 2.5rem; color: #0A2463; margin-bottom: 3rem; position: relative; }
+        .section-title::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 60px; height: 3px; background: #E94560; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .product-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); }
+        .product-image { height: 200px; overflow: hidden; }
+        .product-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .product-card:hover .product-image img { transform: scale(1.1); }
+        .product-info { padding: 1.5rem; }
+        .product-title { font-size: 1.3rem; font-weight: bold; color: #0A2463; margin-bottom: 0.5rem; }
+        .product-destination { color: #666; margin-bottom: 1rem; }
+        .product-price { font-size: 1.5rem; color: #E94560; font-weight: bold; margin-bottom: 1rem; }
+        .product-days { color: #888; font-size: 0.9rem; margin-bottom: 1rem; }
+        .product-features { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        .feature-tag { padding: 4px 10px; background: #f0f4f8; border-radius: 20px; font-size: 0.8rem; color: #0A2463; }
+        .product-btn { display: block; text-align: center; padding: 10px; background: #0A2463; color: #fff; text-decoration: none; border-radius: 8px; transition: background 0.3s ease; }
+        .product-btn:hover { background: #0d3377; }
+        .about-section { background: #f8f9fa; }
+        .about-content { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+        .about-text { color: #555; line-height: 1.8; }
+        .about-text p { margin-bottom: 1rem; }
+        .about-image img { width: 100%; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; margin-top: 3rem; }
+        .stat-item { text-align: center; padding: 2rem; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        .stat-number { font-size: 2.5rem; font-weight: bold; color: #0A2463; margin-bottom: 0.5rem; }
+        .stat-label { color: #666; }
+        .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
+        .service-item { text-align: center; padding: 2rem; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease; }
+        .service-item:hover { transform: translateY(-5px); }
+        .service-icon { width: 60px; height: 60px; background: linear-gradient(135deg, #0A2463, #3E92CC); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 1rem; font-size: 1.5rem; color: #fff; }
+        .service-title { font-size: 1.2rem; font-weight: bold; color: #0A2463; margin-bottom: 0.5rem; }
+        .service-desc { color: #666; font-size: 0.9rem; }
+        .contact-section { background: #0A2463; color: #fff; }
+        .contact-section .section-title { color: #fff; }
+        .contact-content { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
+        .contact-info { display: flex; flex-direction: column; gap: 1.5rem; }
+        .contact-item { display: flex; align-items: center; gap: 1rem; }
+        .contact-icon { width: 40px; height: 40px; background: rgba(233, 69, 96, 0.2); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #E94560; }
+        .contact-text { color: #ccc; }
+        .contact-form { background: #fff; padding: 2rem; border-radius: 12px; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; color: #333; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .submit-btn { width: 100%; padding: 12px; background: #E94560; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s ease; }
+        .submit-btn:hover { background: #c73550; }
+        .footer { background: #061539; color: #fff; padding: 3rem 0; }
+        .footer-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
+        .footer-section h3 { margin-bottom: 1rem; color: #E94560; }
+        .footer-section p { color: #ccc; margin-bottom: 1rem; }
+        .footer-links { list-style: none; }
+        .footer-links li { margin-bottom: 0.5rem; }
+        .footer-links a { color: #ccc; text-decoration: none; transition: color 0.3s ease; }
+        .footer-links a:hover { color: #E94560; }
+        .footer-bottom { text-align: center; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1); color: #666; font-size: 0.9rem; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 2000; justify-content: center; align-items: center; padding: 2rem; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; width: 30px; height: 30px; background: #eee; border: none; border-radius: 50%; cursor: pointer; font-size: 1.2rem; color: #666; z-index: 10; }
+        .modal-image { width: 100%; height: 250px; object-fit: cover; border-radius: 12px 12px 0 0; }
+        .modal-body { padding: 2rem; }
+        .modal-title { font-size: 1.8rem; color: #0A2463; margin-bottom: 0.5rem; }
+        .modal-destination { color: #666; margin-bottom: 1rem; }
+        .modal-price { font-size: 2rem; color: #E94560; font-weight: bold; margin-bottom: 1rem; }
+        .modal-days { color: #888; margin-bottom: 1.5rem; }
+        .modal-features { margin-bottom: 1.5rem; }
+        .modal-features h4 { color: #0A2463; margin-bottom: 0.5rem; }
+        .modal-features ul { list-style: disc; padding-left: 1.5rem; color: #555; }
+        .modal-desc { color: #555; line-height: 1.8; margin-bottom: 1.5rem; }
+        .modal-btn { display: block; text-align: center; padding: 12px; background: #E94560; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; transition: background 0.3s ease; }
+        .modal-btn:hover { background: #c73550; }
+        @media (max-width: 768px) {
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 70px; left: 0; width: 100%; background: #0A2463; padding: 1rem; }
+            .nav-links.active { display: flex; }
+            .nav-links li { margin: 0.5rem 0; }
+            .menu-toggle { display: block; }
+            .hero-title { font-size: 2rem; }
+            .hero-subtitle { font-size: 1rem; }
+            .about-content, .contact-content { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .footer-content { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo"><span>鸿鹄</span>国际旅行社</div>
+            <ul class="nav-links">
+                <li><a href="#home" class="active">首页</a></li>
+                <li><a href="#products">旅游产品</a></li>
+                <li><a href="#about">关于我们</a></li>
+                <li><a href="#services">服务特色</a></li>
+                <li><a href="#contact">联系我们</a></li>
+            </ul>
+            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+        </div>
+    </nav>
+
+    <section id="home" class="hero">
+        <div class="hero-slides" id="heroSlides"></div>
+        <div class="hero-dots" id="heroDots"></div>
+    </section>
+
+    <section id="products" class="section">
+        <div class="container">
+            <h2 class="section-title">热门旅游产品</h2>
+            <div class="products-grid" id="productsGrid"></div>
+        </div>
+    </section>
+
+    <section id="about" class="section about-section">
+        <div class="container">
+            <h2 class="section-title">关于我们</h2>
+            <div class="about-content">
+                <div class="about-text" id="aboutText"></div>
+                <div class="about-image" id="aboutImage"></div>
+            </div>
+            <div class="stats" id="statsGrid"></div>
+        </div>
+    </section>
+
+    <section id="services" class="section">
+        <div class="container">
+            <h2 class="section-title">服务特色</h2>
+            <div class="services">
+                <div class="service-item"><div class="service-icon">✈️</div><h3 class="service-title">机票预订</h3><p class="service-desc">提供国内国际机票预订服务，优惠价格，贴心服务</p></div>
+                <div class="service-item"><div class="service-icon">🏨</div><h3 class="service-title">酒店预订</h3><p class="service-desc">全球优质酒店资源，满足不同档次需求</p></div>
+                <div class="service-item"><div class="service-icon">👩‍💼</div><h3 class="service-title">定制服务</h3><p class="service-desc">专业定制团队，打造专属旅行方案</p></div>
+                <div class="service-item"><div class="service-icon">📞</div><h3 class="service-title">24小时客服</h3><p class="service-desc">全天候服务热线，随时为您解答</p></div>
+                <div class="service-item"><div class="service-icon">🛡️</div><h3 class="service-title">品质保障</h3><p class="service-desc">严格筛选合作伙伴，确保服务质量</p></div>
+                <div class="service-item"><div class="service-icon">💼</div><h3 class="service-title">商务会议</h3><p class="service-desc">专业会议策划，一站式会务服务</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section contact-section">
+        <div class="container">
+            <h2 class="section-title">联系我们</h2>
+            <div class="contact-content">
+                <div class="contact-info" id="contactInfo"></div>
+                <div class="contact-form">
+                    <h3 style="color: #0A2463; margin-bottom: 1rem;">在线咨询</h3>
+                    <form id="contactForm">
+                        <div class="form-group"><label>姓名</label><input type="text" name="name" placeholder="请输入您的姓名" required></div>
+                        <div class="form-group"><label>电话</label><input type="tel" name="phone" placeholder="请输入您的电话" required></div>
+                        <div class="form-group"><label>邮箱</label><input type="email" name="email" placeholder="请输入您的邮箱"></div>
+                        <div class="form-group"><label>咨询内容</label><textarea name="message" placeholder="请输入您的咨询内容" required></textarea></div>
+                        <button type="submit" class="submit-btn">提交咨询</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-section"><h3>鸿鹄国际旅行社</h3><p>专业的旅游服务提供商，为您打造难忘的旅行体验。</p></div>
+            <div class="footer-section"><h3>快速链接</h3><ul class="footer-links"><li><a href="#home">首页</a></li><li><a href="#products">旅游产品</a></li><li><a href="#about">关于我们</a></li><li><a href="#contact">联系我们</a></li></ul></div>
+            <div class="footer-section"><h3>产品服务</h3><ul class="footer-links"><li><a href="#">国内旅游</a></li><li><a href="#">出境旅游</a></li><li><a href="#">定制旅游</a></li><li><a href="#">商务会议</a></li></ul></div>
+            <div class="footer-section" id="footerContact"></div>
+        </div>
+        <div class="footer-bottom"><p>&copy; 2024 北京鸿鹄国际旅行社有限公司 版权所有</p></div>
+    </footer>
+
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <img id="modalImage" class="modal-image" src="" alt="">
+            <div class="modal-body">
+                <h3 id="modalTitle" class="modal-title"></h3>
+                <p id="modalDestination" class="modal-destination"></p>
+                <p id="modalPrice" class="modal-price"></p>
+                <p id="modalDays" class="modal-days"></p>
+                <div class="modal-features"><h4>行程特色</h4><ul id="modalFeatures"></ul></div>
+                <p id="modalDesc" class="modal-desc"></p>
+                <a href="#contact" class="modal-btn" onclick="closeModal()">立即咨询</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const defaultData = {
+            banners: [
+                { id: 1, image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=600&fit=crop', title: '探索世界 感受美好', subtitle: '专业的旅游服务，为您打造难忘的旅行体验', link: '#products' },
+                { id: 2, image: 'https://images.unsplash.com/photo-1513407030348-c983a97b98d8?w=1920&h=600&fit=crop', title: '云美云南 心之所向', subtitle: '云南旅游首选品牌，品质保障', link: '#products' },
+                { id: 3, image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1920&h=600&fit=crop', title: '东南亚风情之旅', subtitle: '泰国、越南、缅甸精品线路', link: '#products' }
+            ],
+            products: [
+                { id: 1, title: '昆明-大理-丽江 深度游', destination: '云南 · 昆明、大理、丽江', price: '¥2,980起', days: '6天5晚', image: 'https://images.unsplash.com/photo-1509062522246-21bda4d32df4?w=600&h=400&fit=crop', features: ['含机票', '五星酒店', '纯玩无购物'], description: '本线路带您深度体验云南三大经典目的地：春城昆明、风花雪月大理、浪漫丽江。全程五星酒店住宿，专业导游陪同，纯玩无购物，让您尽享云南美景。', featuresDetail: ['全程五星酒店住宿', '玉龙雪山冰川公园', '洱海生态廊道骑行', '大理古城深度游', '丽江古城自由活动', '含往返机票'] },
+                { id: 2, title: '西双版纳 热带雨林之旅', destination: '云南 · 西双版纳', price: '¥2,580起', days: '5天4晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', features: ['含机票', '特色民宿', '亲子游'], description: '走进神秘的热带雨林，探索中国唯一的热带雨林自然保护区。与大象亲密接触，体验傣族风情，品尝地道傣味美食。', featuresDetail: ['热带植物园探秘', '野象谷寻踪', '傣族园泼水体验', '星光夜市漫步', '特色傣味美食'] },
+                { id: 3, title: '泰国普吉岛 浪漫海岛游', destination: '泰国 · 普吉岛', price: '¥3,980起', days: '7天6晚', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop', features: ['含机票', '海景房', '蜜月首选'], description: '阳光、沙滩、碧海、蓝天，普吉岛是您度假休闲的完美选择。本线路包含多个海岛游览。', featuresDetail: ['芭东海滩度假', '皮皮岛一日游', '攀牙湾出海', '泰式SPA体验', '人妖秀表演', '含往返机票'] },
+                { id: 4, title: '越南芽庄 休闲度假游', destination: '越南 · 芽庄', price: '¥3,280起', days: '6天5晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', features: ['含机票', '五星酒店', '海鲜盛宴'], description: '芽庄，越南最美的海滨城市之一。本线路带您体验越南独特的文化与美景。', featuresDetail: ['芽庄海滩漫步', '珍珠岛乐园', '占婆塔探秘', '泥浆浴体验', '海鲜大餐'] },
+                { id: 5, title: '贵州 多彩民族风情游', destination: '贵州 · 贵阳、黄果树', price: '¥2,680起', days: '5天4晚', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop', features: ['含机票', '特色美食', '纯玩团'], description: '贵州，一个充满民族风情的地方。本线路带您领略黄果树瀑布的壮观，体验千户苗寨的独特魅力。', featuresDetail: ['黄果树瀑布', '千户苗寨', '镇远古镇', '荔波小七孔', '民族风情表演'] },
+                { id: 6, title: '缅甸 神秘佛国之旅', destination: '缅甸 · 仰光、蒲甘', price: '¥4,580起', days: '8天7晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', features: ['含机票', '文化探索', '深度体验'], description: '走进神秘的佛国缅甸，感受千年历史文化。在蒲甘欣赏万千佛塔的壮丽日出。', featuresDetail: ['仰光大金塔', '蒲甘日出热气球', '曼德勒古城', '乌本桥日落', '茵莱湖泛舟'] }
+            ],
+            company: {
+                name: '北京鸿鹄国际旅行社有限公司',
+                address: '北京市东城区兴隆街56号A801',
+                phone: '010-63456151',
+                email: 'hhtour@163.com',
+                businessHours: '周一至周日 9:00-18:00',
+                description: '北京鸿鹄国际旅行社有限公司成立于2013年，是一家专业的旅游服务企业，注册资本500万元。公司专注于国内旅游、入境旅游和出境旅游业务，尤其以云南旅游产品为核心优势。作为华北地区领先的云南旅游产品供应商，我们秉承"品质至上、服务第一"的理念，致力于为客户提供高品质、个性化的旅游体验。"云美云南"是我们倾力打造的云南旅游首选品牌，以高品质的服务和透明的价格赢得了广大客户的信赖。',
+                aboutImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop',
+                stats: [
+                    { number: '10+', label: '年行业经验' },
+                    { number: '50万+', label: '服务游客' },
+                    { number: '200+', label: '精品线路' },
+                    { number: '99%', label: '客户满意度' }
+                ]
+            }
+        };
+
+        function getWebsiteData() {
+            const stored = localStorage.getItem('hh_website_content');
+            if (stored) {
+                try { return JSON.parse(stored); } 
+                catch (e) { return defaultData; }
+            }
+            return defaultData;
+        }
+
+        function toggleMenu() { document.querySelector('.nav-links').classList.toggle('active'); }
+
+        let currentSlide = 0, slides = [], dots = [];
+
+        function renderBanners(banners) {
+            document.getElementById('heroSlides').innerHTML = banners.map((b, i) => `
+                <div class="hero-slide ${i === 0 ? 'active' : ''}">
+                    <img src="${b.image}" alt="${b.title}">
+                    <div class="hero-overlay">
+                        <h1 class="hero-title">${b.title}</h1>
+                        <p class="hero-subtitle">${b.subtitle}</p>
+                        <a href="${b.link}" class="hero-btn">浏览产品</a>
+                    </div>
+                </div>`).join('');
+            document.getElementById('heroDots').innerHTML = banners.map((_, i) => `<span class="hero-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></span>`).join('');
+            slides = document.querySelectorAll('.hero-slide');
+            dots = document.querySelectorAll('.hero-dot');
+        }
+
+        function goToSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+            currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+        }
+
+        function startSlideshow() { setInterval(() => { goToSlide((currentSlide + 1) % slides.length); }, 5000); }
+
+        function renderProducts(products) {
+            document.getElementById('productsGrid').innerHTML = products.map(p => `
+                <div class="product-card" onclick="openModal(${p.id})">
+                    <div class="product-image"><img src="${p.image}" alt="${p.title}"></div>
+                    <div class="product-info">
+                        <h3 class="product-title">${p.title}</h3>
+                        <p class="product-destination">${p.destination}</p>
+                        <p class="product-price">${p.price}</p>
+                        <p class="product-days">${p.days}</p>
+                        <div class="product-features">${p.features.map(f => `<span class="feature-tag">${f}</span>`).join('')}</div>
+                        <a href="#" class="product-btn" onclick="event.stopPropagation(); openModal(${p.id});">查看详情</a>
+                    </div>
+                </div>`).join('');
+        }
+
+        function openModal(productId) {
+            const p = getWebsiteData().products.find(x => x.id === productId);
+            if (!p) return;
+            document.getElementById('modalImage').src = p.image;
+            document.getElementById('modalTitle').textContent = p.title;
+            document.getElementById('modalDestination').textContent = p.destination;
+            document.getElementById('modalPrice').textContent = p.price;
+            document.getElementById('modalDays').textContent = p.days;
+            document.getElementById('modalDesc').textContent = p.description;
+            document.getElementById('modalFeatures').innerHTML = (p.featuresDetail || []).map(f => `<li>${f}</li>`).join('');
+            document.getElementById('productModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() { document.getElementById('productModal').classList.remove('active'); document.body.style.overflow = ''; }
+        document.getElementById('productModal').addEventListener('click', e => { if (e.target === document.getElementById('productModal')) closeModal(); });
+
+        function renderAbout(company) {
+            document.getElementById('aboutText').innerHTML = `<p>${company.description}</p>`;
+            document.getElementById('aboutImage').innerHTML = `<img src="${company.aboutImage}" alt="公司形象">`;
+            document.getElementById('statsGrid').innerHTML = company.stats.map(s => `<div class="stat-item"><div class="stat-number">${s.number}</div><div class="stat-label">${s.label}</div></div>`).join('');
+        }
+
+        function renderContact(company) {
+            document.getElementById('contactInfo').innerHTML = `
+                <div class="contact-item"><div class="contact-icon">📍</div><div><h4>公司地址</h4><p class="contact-text">${company.address}</p></div></div>
+                <div class="contact-item"><div class="contact-icon">📞</div><div><h4>联系电话</h4><p class="contact-text">${company.phone}</p></div></div>
+                <div class="contact-item"><div class="contact-icon">✉️</div><div><h4>电子邮箱</h4><p class="contact-text">${company.email}</p></div></div>
+                <div class="contact-item"><div class="contact-icon">🕐</div><div><h4>营业时间</h4><p class="contact-text">${company.businessHours}</p></div></div>`;
+            document.getElementById('footerContact').innerHTML = `<h3>联系信息</h3><p>电话：${company.phone}</p><p>邮箱：${company.email}</p><p>地址：${company.address}</p>`;
+        }
+
+        document.getElementById('contactForm').addEventListener('submit', e => { e.preventDefault(); alert('感谢您的咨询！我们会尽快与您联系。'); document.getElementById('contactForm').reset(); });
+        document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const t = document.querySelector(a.getAttribute('href')); if (t) { t.scrollIntoView({ behavior: 'smooth' }); document.querySelector('.nav-links').classList.remove('active'); } }));
+        window.addEventListener('scroll', () => { document.querySelector('.navbar').style.background = window.scrollY > 50 ? 'rgba(10, 36, 99, 0.98)' : 'rgba(10, 36, 99, 0.95)'; });
+
+        function init() { const d = getWebsiteData(); renderBanners(d.banners); renderProducts(d.products); renderAbout(d.company); renderContact(d.company); startSlideshow(); }
+        init();
+    </script>
+</body>
+</html>

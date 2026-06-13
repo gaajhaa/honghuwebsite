@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - 鸿鹄国际旅行社</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f5f5; }
+        :root { --primary: #0A2463; --secondary: #E94560; --accent: #3E92CC; }
+        
+        /* 顶部导航 */
+        .header { background: var(--primary); color: #fff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 1.5rem; }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .header-right span { opacity: 0.8; }
+        .logout-btn { padding: 8px 20px; background: var(--secondary); color: #fff; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s; }
+        .logout-btn:hover { background: #c73550; }
+        .view-site-btn { padding: 8px 20px; background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; transition: background 0.3s; }
+        .view-site-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        /* 主容器 */
+        .main-container { display: flex; min-height: calc(100vh - 70px); }
+        
+        /* 侧边栏 */
+        .sidebar { width: 250px; background: #fff; padding: 2rem 0; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+        .nav-item { padding: 1rem 2rem; cursor: pointer; transition: all 0.3s; border-left: 3px solid transparent; }
+        .nav-item:hover { background: #f5f5f5; }
+        .nav-item.active { background: #f0f4f8; border-left-color: var(--primary); color: var(--primary); font-weight: 600; }
+        
+        /* 内容区 */
+        .content { flex: 1; padding: 2rem; overflow-y: auto; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .panel-title { font-size: 1.8rem; color: var(--primary); margin-bottom: 2rem; }
+        
+        /* 卡片样式 */
+        .card { background: #fff; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .card-title { font-size: 1.2rem; color: var(--primary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #f0f4f8; }
+        
+        /* 统计卡片 */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; padding: 1.5rem; border-radius: 12px; text-align: center; }
+        .stat-card h3 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .stat-card p { opacity: 0.9; }
+        
+        /* 表格 */
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
+        .table th { background: #f8f9fa; font-weight: 600; color: var(--primary); }
+        .table tr:hover { background: #f5f5f5; }
+        .table img { width: 80px; height: 60px; object-fit: cover; border-radius: 6px; }
+        
+        /* 按钮 */
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.3s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: #0d3377; }
+        .btn-danger { background: var(--secondary); color: #fff; }
+        .btn-danger:hover { background: #c73550; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        
+        /* 表单 */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; color: #333; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; font-family: inherit; }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
+        
+        /* 图片上传 */
+        .image-upload { border: 2px dashed #ddd; padding: 2rem; text-align: center; border-radius: 8px; cursor: pointer; transition: border-color 0.3s; }
+        .image-upload:hover { border-color: var(--primary); }
+        .image-upload img { max-width: 100%; max-height: 200px; margin-top: 1rem; }
+        .image-preview { max-width: 200px; max-height: 150px; margin-top: 1rem; }
+        
+        /* 标签输入 */
+        .tags-input { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-height: 44px; }
+        .tags-input:focus-within { border-color: var(--primary); }
+        .tag { display: flex; align-items: center; gap: 0.5rem; padding: 4px 10px; background: var(--primary); color: #fff; border-radius: 4px; font-size: 0.9rem; }
+        .tag span { cursor: pointer; opacity: 0.8; }
+        .tag span:hover { opacity: 1; }
+        .tags-input input { border: none; outline: none; flex: 1; min-width: 100px; padding: 4px; }
+        
+        /* 弹窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; border-radius: 12px; padding: 2rem; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h3 { color: var(--primary); }
+        .modal-close { width: 30px; height: 30px; border: none; background: #eee; border-radius: 50%; cursor: pointer; font-size: 1.2rem; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-container { flex-direction: column; }
+            .header { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>鸿鹄国际旅行社 - 后台管理</h1>
+        <div class="header-right">
+            <span>欢迎，<strong id="adminUsername">管理员</strong></span>
+            <a href="index.html" class="view-site-btn" target="_blank">查看网站</a>
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="nav-item active" onclick="showPanel('dashboard')">仪表盘</div>
+            <div class="nav-item" onclick="showPanel('banners')">Banner管理</div>
+            <div class="nav-item" onclick="showPanel('products')">产品管理</div>
+            <div class="nav-item" onclick="showPanel('company')">公司信息</div>
+            <div class="nav-item" onclick="showPanel('settings')">账户设置</div>
+        </aside>
+        
+        <main class="content">
+            <!-- 仪表盘 -->
+            <div class="panel active" id="panel-dashboard">
+                <h2 class="panel-title">数据概览</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="statBanners">0</h3>
+                        <p>Banner数量</p>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #E94560, #ff7b8a);">
+                        <h3 id="statProducts">0</h3>
+                        <p>旅游产品</p>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #3E92CC, #6bb3e0);">
+                        <h3>99%</h3>
+                        <p>客户满意度</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">快速操作</h3>
+                    <button class="btn btn-primary" onclick="showPanel('banners')">管理Banner</button>
+                    <button class="btn btn-primary" onclick="showPanel('products')">管理产品</button>
+                    <button class="btn btn-primary" onclick="showPanel('company')">编辑公司信息</button>
+                </div>
+            </div>
+            
+            <!-- Banner管理 -->
+            <div class="panel" id="panel-banners">
+                <h2 class="panel-title">Banner管理</h2>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="card-title" style="margin: 0; padding: 0; border: none;">Banner列表</h3>
+                        <button class="btn btn-primary" onclick="openBannerModal()">添加Banner</button>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>图片</th>
+                                <th>标题</th>
+                                <th>副标题</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bannersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 产品管理 -->
+            <div class="panel" id="panel-products">
+                <h2 class="panel-title">产品管理</h2>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="card-title" style="margin: 0; padding: 0; border: none;">产品列表</h3>
+                        <button class="btn btn-primary" onclick="openProductModal()">添加产品</button>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>图片</th>
+                                <th>产品名称</th>
+                                <th>目的地</th>
+                                <th>价格</th>
+                                <th>天数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 公司信息 -->
+            <div class="panel" id="panel-company">
+                <h2 class="panel-title">公司信息</h2>
+                <div class="card">
+                    <h3 class="card-title">基本信息</h3>
+                    <form id="companyForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>公司名称</label>
+                                <input type="text" name="name" id="companyName">
+                            </div>
+                            <div class="form-group">
+                                <label>联系电话</label>
+                                <input type="text" name="phone" id="companyPhone">
+                            </div>
+                            <div class="form-group">
+                                <label>电子邮箱</label>
+                                <input type="email" name="email" id="companyEmail">
+                            </div>
+                            <div class="form-group">
+                                <label>营业时间</label>
+                                <input type="text" name="businessHours" id="companyHours">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>公司地址</label>
+                            <input type="text" name="address" id="companyAddress">
+                        </div>
+                        <div class="form-group">
+                            <label>公司简介</label>
+                            <textarea name="description" id="companyDesc" rows="5"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">保存修改</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">公司图片</h3>
+                    <div class="form-group">
+                        <label>关于我们页面图片</label>
+                        <div class="image-upload" onclick="document.getElementById('aboutImageInput').click()">
+                            <p>点击上传图片</p>
+                            <input type="file" id="aboutImageInput" accept="image/*" style="display: none;" onchange="handleAboutImageUpload(event)">
+                            <img id="aboutImagePreview" class="image-preview" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">统计数据</h3>
+                    <div id="statsEditor"></div>
+                    <button class="btn btn-primary" onclick="addStat()" style="margin-top: 1rem;">添加统计项</button>
+                </div>
+            </div>
+            
+            <!-- 账户设置 -->
+            <div class="panel" id="panel-settings">
+                <h2 class="panel-title">账户设置</h2>
+                <div class="card">
+                    <h3 class="card-title">修改密码</h3>
+                    <form id="passwordForm">
+                        <div class="form-group">
+                            <label>当前密码</label>
+                            <input type="password" name="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>新密码</label>
+                            <input type="password" name="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>确认新密码</label>
+                            <input type="password" name="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">修改密码</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">重置数据</h3>
+                    <p style="color: #666; margin-bottom: 1rem;">将网站内容恢复为默认数据（谨慎操作）</p>
+                    <button class="btn btn-danger" onclick="resetData()">重置所有数据</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Banner弹窗 -->
+    <div class="modal" id="bannerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="bannerModalTitle">添加Banner</h3>
+                <button class="modal-close" onclick="closeBannerModal()">×</button>
+            </div>
+            <form id="bannerForm">
+                <input type="hidden" id="bannerId">
+                <div class="form-group">
+                    <label>Banner图片</label>
+                    <div class="image-upload" onclick="document.getElementById('bannerImageInput').click()">
+                        <p>点击上传图片（建议尺寸：1920x600）</p>
+                        <input type="file" id="bannerImageInput" accept="image/*" style="display: none;" onchange="handleBannerImageUpload(event)">
+                        <img id="bannerImagePreview" class="image-preview" style="display: none;">
+                    </div>
+                    <input type="hidden" id="bannerImage">
+                </div>
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="bannerTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>副标题</label>
+                    <input type="text" id="bannerSubtitle" required>
+                </div>
+                <div class="form-group">
+                    <label>链接（#products 等）</label>
+                    <input type="text" id="bannerLink" value="#products">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="closeBannerModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 产品弹窗 -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle">添加产品</h3>
+                <button class="modal-close" onclick="closeProductModal()">×</button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="form-group">
+                    <label>产品图片</label>
+                    <div class="image-upload" onclick="document.getElementById('productImageInput').click()">
+                        <p>点击上传图片（建议尺寸：600x400）</p>
+                        <input type="file" id="productImageInput" accept="image/*" style="display: none;" onchange="handleProductImageUpload(event)">
+                        <img id="productImagePreview" class="image-preview" style="display: none;">
+                    </div>
+                    <input type="hidden" id="productImage">
+                </div>
+                <div class="form-group">
+                    <label>产品名称</label>
+                    <input type="text" id="productTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>目的地</label>
+                    <input type="text" id="productDestination" placeholder="例如：云南 · 昆明、大理、丽江" required>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>价格</label>
+                        <input type="text" id="productPrice" placeholder="例如：¥2,980起" required>
+                    </div>
+                    <div class="form-group">
+                        <label>天数</label>
+                        <input type="text" id="productDays" placeholder="例如：6天5晚" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>产品特色标签（点击添加）</label>
+                    <div class="tags-input" id="productTagsInput">
+                        <input type="text" placeholder="输入后按回车添加" onkeypress="addTag(event, 'productTags')">
+                    </div>
+                    <input type="hidden" id="productTags">
+                </div>
+                <div class="form-group">
+                    <label>行程特色（每行一条）</label>
+                    <textarea id="productFeaturesDetail" rows="4" placeholder="每行一条行程特色"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>产品描述</label>
+                    <textarea id="productDesc" rows="4"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="closeProductModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 默认数据
+        const defaultData = {
+            banners: [
+                { id: 1, image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=600&fit=crop', title: '探索世界 感受美好', subtitle: '专业的旅游服务，为您打造难忘的旅行体验', link: '#products' },
+                { id: 2, image: 'https://images.unsplash.com/photo-1513407030348-c983a97b98d8?w=1920&h=600&fit=crop', title: '云美云南 心之所向', subtitle: '云南旅游首选品牌，品质保障', link: '#products' },
+                { id: 3, image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1920&h=600&fit=crop', title: '东南亚风情之旅', subtitle: '泰国、越南、缅甸精品线路', link: '#products' }
+            ],
+            products: [
+                { id: 1, title: '昆明-大理-丽江 深度游', destination: '云南 · 昆明、大理、丽江', price: '¥2,980起', days: '6天5晚', image: 'https://images.unsplash.com/photo-1509062522246-21bda4d32df4?w=600&h=400&fit=crop', features: ['含机票', '五星酒店', '纯玩无购物'], description: '本线路带您深度体验云南三大经典目的地', featuresDetail: ['全程五星酒店住宿', '玉龙雪山冰川公园', '洱海生态廊道骑行', '大理古城深度游', '丽江古城自由活动', '含往返机票'] },
+                { id: 2, title: '西双版纳 热带雨林之旅', destination: '云南 · 西双版纳', price: '¥2,580起', days: '5天4晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', features: ['含机票', '特色民宿', '亲子游'], description: '走进神秘的热带雨林，探索中国唯一的热带雨林自然保护区', featuresDetail: ['热带植物园探秘', '野象谷寻踪', '傣族园泼水体验', '星光夜市漫步', '特色傣味美食'] },
+                { id: 3, title: '泰国普吉岛 浪漫海岛游', destination: '泰国 · 普吉岛', price: '¥3,980起', days: '7天6晚', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop', features: ['含机票', '海景房', '蜜月首选'], description: '阳光、沙滩、碧海、蓝天，普吉岛是您度假休闲的完美选择', featuresDetail: ['芭东海滩度假', '皮皮岛一日游', '攀牙湾出海', '泰式SPA体验', '人妖秀表演', '含往返机票'] },
+                { id: 4, title: '越南芽庄 休闲度假游', destination: '越南 · 芽庄', price: '¥3,280起', days: '6天5晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', features: ['含机票', '五星酒店', '海鲜盛宴'], description: '芽庄，越南最美的海滨城市之一', featuresDetail: ['芽庄海滩漫步', '珍珠岛乐园', '占婆塔探秘', '泥浆浴体验', '海鲜大餐'] },
+                { id: 5, title: '贵州 多彩民族风情游', destination: '贵州 · 贵阳、黄果树', price: '¥2,680起', days: '5天4晚', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop', features: ['含机票', '特色美食', '纯玩团'], description: '贵州，一个充满民族风情的地方', featuresDetail: ['黄果树瀑布', '千户苗寨', '镇远古镇', '荔波小七孔', '民族风情表演'] },
+                { id: 6, title: '缅甸 神秘佛国之旅', destination: '缅甸 · 仰光、蒲甘', price: '¥4,580起', days: '8天7晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', features: ['含机票', '文化探索', '深度体验'], description: '走进神秘的佛国缅甸，感受千年历史文化', featuresDetail: ['仰光大金塔', '蒲甘日出热气球', '曼德勒古城', '乌本桥日落', '茵莱湖泛舟'] }
+            ],
+            company: {
+                name: '北京鸿鹄国际旅行社有限公司',
+                address: '北京市东城区兴隆街56号A801',
+                phone: '010-63456151',
+                email: 'hhtour@163.com',
+                businessHours: '周一至周日 9:00-18:00',
+                description: '北京鸿鹄国际旅行社有限公司成立于2013年，是一家专业的旅游服务企业，注册资本500万元。公司专注于国内旅游、入境旅游和出境旅游业务，尤其以云南旅游产品为核心优势。',
+                aboutImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop',
+                stats: [
+                    { number: '10+', label: '年行业经验' },
+                    { number: '50万+', label: '服务游客' },
+                    { number: '200+', label: '精品线路' },
+                    { number: '99%', label: '客户满意度' }
+                ]
+            }
+        };
+
+        // 获取数据
+        function getData() {
+            const stored = localStorage.getItem('hh_website_content');
+            if (stored) {
+                try { return JSON.parse(stored); } 
+                catch (e) { return defaultData; }
+            }
+            return defaultData;
+        }
+
+        // 保存数据
+        function saveData(data) {
+            localStorage.setItem('hh_website_content', JSON.stringify(data));
+        }
+
+        // 检查登录
+        function checkLogin() {
+            const session = localStorage.getItem('hh_admin_session');
+            if (!session) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            try {
+                const data = JSON.parse(session);
+                if (data.expiresAt < Date.now()) {
+                    localStorage.removeItem('hh_admin_session');
+                    window.location.href = 'admin-login.html';
+                }
+            } catch (e) {
+                window.location.href = 'admin-login.html';
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('hh_admin_session');
+            window.location.href = 'admin-login.html';
+        }
+
+        // 显示面板
+        function showPanel(name) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('panel-' + name).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (name === 'dashboard') updateDashboard();
+            if (name === 'banners') renderBanners();
+            if (name === 'products') renderProducts();
+            if (name === 'company') loadCompanyForm();
+        }
+
+        // 更新仪表盘
+        function updateDashboard() {
+            const data = getData();
+            document.getElementById('statBanners').textContent = data.banners.length;
+            document.getElementById('statProducts').textContent = data.products.length;
+        }
+
+        // 渲染Banners
+        function renderBanners() {
+            const data = getData();
+            const tbody = document.getElementById('bannersTable');
+            tbody.innerHTML = data.banners.map(b => `
+                <tr>
+                    <td><img src="${b.image}" alt="${b.title}"></td>
+                    <td>${b.title}</td>
+                    <td>${b.subtitle}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editBanner(${b.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteBanner(${b.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Banner弹窗
+        function openBannerModal(id = null) {
+            document.getElementById('bannerModal').classList.add('active');
+            document.getElementById('bannerForm').reset();
+            document.getElementById('bannerImagePreview').style.display = 'none';
+            document.getElementById('bannerId').value = '';
+            document.getElementById('bannerModalTitle').textContent = '添加Banner';
+            
+            if (id) {
+                const data = getData();
+                const banner = data.banners.find(b => b.id === id);
+                if (banner) {
+                    document.getElementById('bannerId').value = banner.id;
+                    document.getElementById('bannerImage').value = banner.image;
+                    document.getElementById('bannerImagePreview').src = banner.image;
+                    document.getElementById('bannerImagePreview').style.display = 'block';
+                    document.getElementById('bannerTitle').value = banner.title;
+                    document.getElementById('bannerSubtitle').value = banner.subtitle;
+                    document.getElementById('bannerLink').value = banner.link;
+                    document.getElementById('bannerModalTitle').textContent = '编辑Banner';
+                }
+            }
+        }
+
+        function closeBannerModal() {
+            document.getElementById('bannerModal').classList.remove('active');
+        }
+
+        function editBanner(id) { openBannerModal(id); }
+
+        function deleteBanner(id) {
+            if (confirm('确定要删除这个Banner吗？')) {
+                const data = getData();
+                data.banners = data.banners.filter(b => b.id !== id);
+                saveData(data);
+                renderBanners();
+            }
+        }
+
+        function handleBannerImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('bannerImage').value = e.target.result;
+                    document.getElementById('bannerImagePreview').src = e.target.result;
+                    document.getElementById('bannerImagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Banner表单提交
+        document.getElementById('bannerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = getData();
+            const id = document.getElementById('bannerId').value;
+            const banner = {
+                id: id ? parseInt(id) : Date.now(),
+                image: document.getElementById('bannerImage').value,
+                title: document.getElementById('bannerTitle').value,
+                subtitle: document.getElementById('bannerSubtitle').value,
+                link: document.getElementById('bannerLink').value
+            };
+            
+            if (id) {
+                const index = data.banners.findIndex(b => b.id === parseInt(id));
+                data.banners[index] = banner;
+            } else {
+                data.banners.push(banner);
+            }
+            
+            saveData(data);
+            closeBannerModal();
+            renderBanners();
+        });
+
+        // 渲染产品
+        function renderProducts() {
+            const data = getData();
+            const tbody = document.getElementById('productsTable');
+            tbody.innerHTML = data.products.map(p => `
+                <tr>
+                    <td><img src="${p.image}" alt="${p.title}"></td>
+                    <td>${p.title}</td>
+                    <td>${p.destination}</td>
+                    <td>${p.price}</td>
+                    <td>${p.days}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editProduct(${p.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 产品弹窗
+        let productTags = [];
+
+        function openProductModal(id = null) {
+            document.getElementById('productModal').classList.add('active');
+            document.getElementById('productForm').reset();
+            document.getElementById('productImagePreview').style.display = 'none';
+            document.getElementById('productId').value = '';
+            document.getElementById('productModalTitle').textContent = '添加产品';
+            productTags = [];
+            renderProductTags();
+            
+            if (id) {
+                const data = getData();
+                const product = data.products.find(p => p.id === id);
+                if (product) {
+                    document.getElementById('productId').value = product.id;
+                    document.getElementById('productImage').value = product.image;
+                    document.getElementById('productImagePreview').src = product.image;
+                    document.getElementById('productImagePreview').style.display = 'block';
+                    document.getElementById('productTitle').value = product.title;
+                    document.getElementById('productDestination').value = product.destination;
+                    document.getElementById('productPrice').value = product.price;
+                    document.getElementById('productDays').value = product.days;
+                    document.getElementById('productDesc').value = product.description;
+                    document.getElementById('productFeaturesDetail').value = (product.featuresDetail || []).join('\n');
+                    productTags = [...(product.features || [])];
+                    renderProductTags();
+                    document.getElementById('productModalTitle').textContent = '编辑产品';
+                }
+            }
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+
+        function editProduct(id) { openProductModal(id); }
+
+        function deleteProduct(id) {
+            if (confirm('确定要删除这个产品吗？')) {
+                const data = getData();
+                data.products = data.products.filter(p => p.id !== id);
+                saveData(data);
+                renderProducts();
+            }
+        }
+
+        function handleProductImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('productImage').value = e.target.result;
+                    document.getElementById('productImagePreview').src = e.target.result;
+                    document.getElementById('productImagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function renderProductTags() {
+            const container = document.getElementById('productTagsInput');
+            const input = container.querySelector('input');
+            container.innerHTML = '';
+            productTags.forEach((tag, index) => {
+                container.innerHTML += `<span class="tag">${tag} <span onclick="removeTag(${index})">×</span></span>`;
+            });
+            container.appendChild(input);
+        }
+
+        function addTag(event, type) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const value = event.target.value.trim();
+                if (value && type === 'productTags' && !productTags.includes(value)) {
+                    productTags.push(value);
+                    renderProductTags();
+                    event.target.value = '';
+                }
+            }
+        }
+
+        function removeTag(index) {
+            productTags.splice(index, 1);
+            renderProductTags();
+        }
+
+        // 产品表单提交
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = getData();
+            const id = document.getElementById('productId').value;
+            const featuresDetail = document.getElementById('productFeaturesDetail').value.split('\n').filter(f => f.trim());
+            
+            const product = {
+                id: id ? parseInt(id) : Date.now(),
+                image: document.getElementById('productImage').value,
+                title: document.getElementById('productTitle').value,
+                destination: document.getElementById('productDestination').value,
+                price: document.getElementById('productPrice').value,
+                days: document.getElementById('productDays').value,
+                features: productTags,
+                description: document.getElementById('productDesc').value,
+                featuresDetail: featuresDetail
+            };
+            
+            if (id) {
+                const index = data.products.findIndex(p => p.id === parseInt(id));
+                data.products[index] = product;
+            } else {
+                data.products.push(product);
+            }
+            
+            saveData(data);
+            closeProductModal();
+            renderProducts();
+        });
+
+        // 加载公司表单
+        function loadCompanyForm() {
+            const data = getData();
+            document.getElementById('companyName').value = data.company.name;
+            document.getElementById('companyPhone').value = data.company.phone;
+            document.getElementById('companyEmail').value = data.company.email;
+            document.getElementById('companyHours').value = data.company.businessHours;
+            document.getElementById('companyAddress').value = data.company.address;
+            document.getElementById('companyDesc').value = data.company.description;
+            
+            if (data.company.aboutImage) {
+                document.getElementById('aboutImagePreview').src = data.company.aboutImage;
+                document.getElementById('aboutImagePreview').style.display = 'block';
+            }
+            
+            renderStatsEditor(data.company.stats || []);
+        }
+
+        function renderStatsEditor(stats) {
+            const container = document.getElementById('statsEditor');
+            container.innerHTML = stats.map((s, i) => `
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <input type="text" value="${s.number}" placeholder="数值（如：10+）" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" onchange="updateStat(${i}, 'number', this.value)">
+                    <input type="text" value="${s.label}" placeholder="标签（如：年行业经验）" style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" onchange="updateStat(${i}, 'label', this.value)">
+                    <button class="btn btn-danger btn-sm" onclick="removeStat(${i})">删除</button>
+                </div>
+            `).join('');
+        }
+
+        function updateStat(index, field, value) {
+            const data = getData();
+            data.company.stats[index][field] = value;
+            saveData(data);
+        }
+
+        function removeStat(index) {
+            const data = getData();
+            data.company.stats.splice(index, 1);
+            saveData(data);
+            renderStatsEditor(data.company.stats);
+        }
+
+        function addStat() {
+            const data = getData();
+            data.company.stats.push({ number: '0', label: '新统计项' });
+            saveData(data);
+            renderStatsEditor(data.company.stats);
+        }
+
+        function handleAboutImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = getData();
+                    data.company.aboutImage = e.target.result;
+                    saveData(data);
+                    document.getElementById('aboutImagePreview').src = e.target.result;
+                    document.getElementById('aboutImagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 公司表单提交
+        document.getElementById('companyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = getData();
+            data.company.name = document.getElementById('companyName').value;
+            data.company.phone = document.getElementById('companyPhone').value;
+            data.company.email = document.getElementById('companyEmail').value;
+            data.company.businessHours = document.getElementById('companyHours').value;
+            data.company.address = document.getElementById('companyAddress').value;
+            data.company.description = document.getElementById('companyDesc').value;
+            saveData(data);
+            alert('公司信息已保存！');
+        });
+
+        // 修改密码
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const current = this.elements.currentPassword.value;
+            const newPass = this.elements.newPassword.value;
+            const confirmPass = this.elements.confirmPassword.value;
+            
+            const admin = JSON.parse(localStorage.getItem('hh_admin') || '{"username":"admin","password":"admin123"}');
+            
+            if (current !== admin.password) {
+                alert('当前密码错误！');
+                return;
+            }
+            
+            if (newPass !== confirmPass) {
+                alert('两次输入的新密码不一致！');
+                return;
+            }
+            
+            const newAdmin = { ...admin, password: newPass };
+            localStorage.setItem('hh_admin', JSON.stringify(newAdmin));
+            alert('密码修改成功！');
+            this.reset();
+        });
+
+        // 重置数据
+        function resetData() {
+            if (confirm('确定要重置所有数据吗？这将恢复为默认内容。')) {
+                localStorage.removeItem('hh_website_content');
+                alert('数据已重置为默认值！');
+                location.reload();
+            }
+        }
+
+        // 初始化
+        checkLogin();
+        updateDashboard();
+    </script>
+</body>
+</html>
