@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
-  <rect width="800" height="600" fill="#e8e8e8"/>
-  <rect x="300" y="230" width="200" height="140" rx="12" fill="#cccccc"/>
-  <polygon points="400,260 340,340 460,340" fill="#aaaaaa"/>
-  <text x="400" y="420" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="20" fill="#999999">暂无图片</text>
-</svg>
