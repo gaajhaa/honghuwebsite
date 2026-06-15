@@ -411,58 +411,132 @@
     </div>
 
     <script>
-        // ===== API 基础配置 =====
-        const API_BASE = '';
-
-        async function apiGet(url) {
-            const res = await fetch(API_BASE + url);
-            if (!res.ok) throw new Error('请求失败: ' + res.status);
-            return res.json();
-        }
-
-        async function apiPost(url, body) {
-            const res = await fetch(API_BASE + url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+        // ===== 图片压缩 / 大小校验工具 =====
+        // localStorage 单域名约 5MB，多次上传大图会超出配额。
+        // 统一把上传的图片压缩到合理尺寸 & 质量，转成 data:image/jpeg;base64
+        function compressImage(file, maxWidth, maxHeight, quality) {
+            maxWidth = maxWidth || 1920;
+            maxHeight = maxHeight || 1080;
+            quality = quality || 0.78;
+            return new Promise(function (resolve, reject) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = new Image();
+                    img.onload = function () {
+                        let w = img.width;
+                        let h = img.height;
+                        // 按比例缩放到最大宽高内
+                        if (w > maxWidth) {
+                            h = h * (maxWidth / w);
+                            w = maxWidth;
+                        }
+                        if (h > maxHeight) {
+                            w = w * (maxHeight / h);
+                            h = maxHeight;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        // 白底填充，避免 PNG 透明图片在 jpeg 下变黑
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        try {
+                            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                            resolve(dataUrl);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    img.onerror = function () {
+                        reject(new Error('图片加载失败，请尝试其他文件'));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function () {
+                    reject(new Error('读取图片失败'));
+                };
+                reader.readAsDataURL(file);
             });
-            if (!res.ok) throw new Error('请求失败: ' + res.status);
-            return res.json();
         }
 
-        async function apiUpload(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-            const res = await fetch(API_BASE + '/api/upload', {
-                method: 'POST',
-                body: formData
-            });
-            if (!res.ok) throw new Error('上传失败: ' + res.status);
-            return res.json();
+        // 便捷：banner 大图更严格（最大 1920x640）
+        function compressBanner(file) { return compressImage(file, 1920, 640, 0.78); }
+        // 产品主图（推荐 1280x800）
+        function compressProduct(file) { return compressImage(file, 1280, 800, 0.78); }
+        // 海报图：保持原分辨率，不做像素级缩限，仅做 JPEG 质量压缩（保证清晰同时合理控制体积）
+        function compressPoster(file) { return compressImage(file, 12000, 12000, 0.72); }
+        // logo（小图，建议 512x512）
+        function compressLogo(file) { return compressImage(file, 512, 512, 0.85); }
+        // 二维码（小图即可）
+        function compressQr(file) { return compressImage(file, 512, 512, 0.9); }
+
+        // 估算将要保存的 JSON 大小
+        // 注意：localStorage 中的图片以 base64 字符串存储，会比原文件大 ~1.33 倍；
+        // 此外每次保存都会把"全部 Banner + 全部产品图 + 全部海报 + 公司信息/Logo/二维码"整体字符串化，
+        // 因此整体存储大小 = sum(每张图 base64) + 文本；可能比单张图片文件大得多。
+        function checkDataSize(data) {
+            try {
+                const str = JSON.stringify(data);
+                const bytes = str.length * 2;
+                const mb = bytes / 1024 / 1024;
+                return { bytes: bytes, mb: mb, exceed: mb >= 3.5 };
+            } catch (e) {
+                return { bytes: 0, mb: 0, exceed: false };
+            }
         }
 
-        async function apiDeleteImage(filename) {
-            const res = await fetch(API_BASE + '/api/image/' + encodeURIComponent(filename), {
-                method: 'DELETE'
-            });
-            if (!res.ok) throw new Error('删除失败: ' + res.status);
-            return res.json();
+        // 通用的"点击上传图片 → 压缩 → 写预览 + 写隐藏 input"流程
+        function handleImageUpload(event, opts, onDone) {
+            try {
+                const file = event.target.files && event.target.files[0];
+                if (!file) return;
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('图片过大（超过 10MB），请选择较小的图片，或先在本地压缩后再上传。');
+                    return;
+                }
+                // 压缩
+                const fn = opts.compressFn || compressProduct;
+                fn(file).then(function (dataUrl) {
+                    document.getElementById(opts.previewId).src = dataUrl;
+                    document.getElementById(opts.previewId).style.display = 'block';
+                    if (opts.hiddenId) {
+                        document.getElementById(opts.hiddenId).value = dataUrl;
+                    }
+                    if (typeof onDone === 'function') {
+                        try { onDone(dataUrl); } catch (err) { console.error(err); }
+                    }
+                }).catch(function (err) {
+                    console.error(err);
+                    alert('图片处理失败：' + (err && err.message ? err.message : err));
+                });
+            } catch (err) {
+                console.error(err);
+                alert('上传图片失败：' + err.message);
+            }
         }
 
-        // ===== 默认数据（图片字段用空字符串，等用户上传） =====
+        // 清理上传后留下的 file input，避免再次点击不触发 onchange
+        function resetFileInput(id) {
+            const el = document.getElementById(id);
+            if (el) { el.value = ''; }
+        }
+
+        // 默认数据
         const defaultData = {
             banners: [
-                { id: 1, image: '', title: '探索世界 感受美好', subtitle: '专业的旅游服务，为您打造难忘的旅行体验', link: '#products' },
-                { id: 2, image: '', title: '云美云南 心之所向', subtitle: '云南旅游首选品牌，品质保障', link: '#products' },
-                { id: 3, image: '', title: '东南亚风情之旅', subtitle: '泰国、越南、缅甸精品线路', link: '#products' }
+                { id: 1, image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=600&fit=crop', title: '探索世界 感受美好', subtitle: '专业的旅游服务，为您打造难忘的旅行体验', link: '#products' },
+                { id: 2, image: 'https://images.unsplash.com/photo-1513407030348-c983a97b98d8?w=1920&h=600&fit=crop', title: '云美云南 心之所向', subtitle: '云南旅游首选品牌，品质保障', link: '#products' },
+                { id: 3, image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1920&h=600&fit=crop', title: '东南亚风情之旅', subtitle: '泰国、越南、缅甸精品线路', link: '#products' }
             ],
             products: [
-                { id: 1, title: '昆明-大理-丽江 深度游', destination: '云南 · 昆明、大理、丽江', price: '¥2,980起', days: '6天5晚', image: '', poster: '', features: ['含机票', '五星酒店', '纯玩无购物'], description: '本线路带您深度体验云南三大经典目的地', featuresDetail: ['全程五星酒店住宿', '玉龙雪山冰川公园', '洱海生态廊道骑行', '大理古城深度游', '丽江古城自由活动', '含往返机票'] },
-                { id: 2, title: '西双版纳 热带雨林之旅', destination: '云南 · 西双版纳', price: '¥2,580起', days: '5天4晚', image: '', poster: '', features: ['含机票', '特色民宿', '亲子游'], description: '走进神秘的热带雨林', featuresDetail: ['热带植物园探秘', '野象谷寻踪', '傣族园泼水体验', '星光夜市漫步', '特色傣味美食'] },
-                { id: 3, title: '泰国普吉岛 浪漫海岛游', destination: '泰国 · 普吉岛', price: '¥3,980起', days: '7天6晚', image: '', poster: '', features: ['含机票', '海景房', '蜜月首选'], description: '阳光、沙滩、碧海、蓝天', featuresDetail: ['芭东海滩度假', '皮皮岛一日游', '攀牙湾出海', '泰式SPA体验', '人妖秀表演', '含往返机票'] },
-                { id: 4, title: '越南芽庄 休闲度假游', destination: '越南 · 芽庄', price: '¥3,280起', days: '6天5晚', image: '', poster: '', features: ['含机票', '五星酒店', '海鲜盛宴'], description: '芽庄，越南最美的海滨城市之一', featuresDetail: ['芽庄海滩漫步', '珍珠岛乐园', '占婆塔探秘', '泥浆浴体验', '海鲜大餐'] },
-                { id: 5, title: '贵州 多彩民族风情游', destination: '贵州 · 贵阳、黄果树', price: '¥2,680起', days: '5天4晚', image: '', poster: '', features: ['含机票', '特色美食', '纯玩团'], description: '贵州，一个充满民族风情的地方', featuresDetail: ['黄果树瀑布', '千户苗寨', '镇远古镇', '荔波小七孔', '民族风情表演'] },
-                { id: 6, title: '缅甸 神秘佛国之旅', destination: '缅甸 · 仰光、蒲甘', price: '¥4,580起', days: '8天7晚', image: '', poster: '', features: ['含机票', '文化探索', '深度体验'], description: '走进神秘的佛国缅甸', featuresDetail: ['仰光大金塔', '蒲甘日出热气球', '曼德勒古城', '乌本桥日落', '茵莱湖泛舟'] }
+                { id: 1, title: '昆明-大理-丽江 深度游', destination: '云南 · 昆明、大理、丽江', price: '¥2,980起', days: '6天5晚', image: 'https://images.unsplash.com/photo-1509062522246-21bda4d32df4?w=600&h=400&fit=crop', poster: '', features: ['含机票', '五星酒店', '纯玩无购物'], description: '本线路带您深度体验云南三大经典目的地', featuresDetail: ['全程五星酒店住宿', '玉龙雪山冰川公园', '洱海生态廊道骑行', '大理古城深度游', '丽江古城自由活动', '含往返机票'] },
+                { id: 2, title: '西双版纳 热带雨林之旅', destination: '云南 · 西双版纳', price: '¥2,580起', days: '5天4晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', poster: '', features: ['含机票', '特色民宿', '亲子游'], description: '走进神秘的热带雨林', featuresDetail: ['热带植物园探秘', '野象谷寻踪', '傣族园泼水体验', '星光夜市漫步', '特色傣味美食'] },
+                { id: 3, title: '泰国普吉岛 浪漫海岛游', destination: '泰国 · 普吉岛', price: '¥3,980起', days: '7天6晚', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop', poster: '', features: ['含机票', '海景房', '蜜月首选'], description: '阳光、沙滩、碧海、蓝天', featuresDetail: ['芭东海滩度假', '皮皮岛一日游', '攀牙湾出海', '泰式SPA体验', '人妖秀表演', '含往返机票'] },
+                { id: 4, title: '越南芽庄 休闲度假游', destination: '越南 · 芽庄', price: '¥3,280起', days: '6天5晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', poster: '', features: ['含机票', '五星酒店', '海鲜盛宴'], description: '芽庄，越南最美的海滨城市之一', featuresDetail: ['芽庄海滩漫步', '珍珠岛乐园', '占婆塔探秘', '泥浆浴体验', '海鲜大餐'] },
+                { id: 5, title: '贵州 多彩民族风情游', destination: '贵州 · 贵阳、黄果树', price: '¥2,680起', days: '5天4晚', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop', poster: '', features: ['含机票', '特色美食', '纯玩团'], description: '贵州，一个充满民族风情的地方', featuresDetail: ['黄果树瀑布', '千户苗寨', '镇远古镇', '荔波小七孔', '民族风情表演'] },
+                { id: 6, title: '缅甸 神秘佛国之旅', destination: '缅甸 · 仰光、蒲甘', price: '¥4,580起', days: '8天7晚', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop', poster: '', features: ['含机票', '文化探索', '深度体验'], description: '走进神秘的佛国缅甸', featuresDetail: ['仰光大金塔', '蒲甘日出热气球', '曼德勒古城', '乌本桥日落', '茵莱湖泛舟'] }
             ],
             company: {
                 name: '北京鸿鹄国际旅行社有限公司',
@@ -471,7 +545,7 @@
                 email: 'hhtour@163.com',
                 businessHours: '周一至周日 9:00-18:00',
                 description: '北京鸿鹄国际旅行社有限公司成立于2013年，是一家专业的旅游服务企业，注册资本500万元。公司专注于国内旅游、入境旅游和出境旅游业务，尤其以云南旅游产品为核心优势。',
-                aboutImage: '',
+                aboutImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop',
                 logo: '',
                 wechatQr: '',
                 videoQr: '',
@@ -484,31 +558,27 @@
             }
         };
 
-        // ===== 图片路径辅助 =====
-        function imgSrc(filename) {
-            if (!filename) return 'images/placeholder.svg';
-            if (filename.startsWith('http') || filename.startsWith('data:')) return filename;
-            return 'images/' + filename;
-        }
-
-        // ===== 数据归一化 =====
+        // 数据归一化：对旧版本数据补全缺失字段，避免运行时 undefined
         function normalizeData(data) {
             if (!data || typeof data !== 'object') return JSON.parse(JSON.stringify(defaultData));
+            // banners 与 products 至少要是数组
             data.banners = Array.isArray(data.banners) ? data.banners : [];
             data.products = Array.isArray(data.products) ? data.products : [];
-            data.products.forEach(function(p) {
+            // 每个 product 补全 poster / features / featuresDetail
+            data.products.forEach((p) => {
                 if (typeof p.poster === 'undefined') p.poster = '';
                 if (!Array.isArray(p.features)) p.features = [];
                 if (!Array.isArray(p.featuresDetail)) p.featuresDetail = [];
                 if (!p.description) p.description = '';
                 if (!p.image) p.image = '';
             });
+            // company 补全
             if (!data.company || typeof data.company !== 'object') {
                 data.company = JSON.parse(JSON.stringify(defaultData.company));
             } else {
-                var dc = defaultData.company;
-                var c = data.company;
-                for (var k in dc) {
+                const dc = defaultData.company;
+                const c = data.company;
+                for (const k of Object.keys(dc)) {
                     if (typeof c[k] === 'undefined') {
                         c[k] = Array.isArray(dc[k]) ? JSON.parse(JSON.stringify(dc[k])) : dc[k];
                     }
@@ -518,100 +588,52 @@
             return data;
         }
 
-        // ===== 数据读写（通过API，降级localStorage） =====
-        var _dataCache = null;
-
-        async function getData() {
-            if (_dataCache) return JSON.parse(JSON.stringify(_dataCache));
-            try {
-                var result = await apiGet('/api/data');
-                if (result && Object.keys(result).length > 0) {
-                    _dataCache = normalizeData(result);
-                    return JSON.parse(JSON.stringify(_dataCache));
-                }
-            } catch (e) {
-                console.warn('API读取数据失败，尝试localStorage:', e.message);
-            }
-            // 降级：localStorage
-            var stored = localStorage.getItem('hh_website_content');
+        // 获取数据
+        function getData() {
+            const stored = localStorage.getItem('hh_website_content');
             if (stored) {
                 try {
-                    _dataCache = normalizeData(JSON.parse(stored));
-                    return JSON.parse(JSON.stringify(_dataCache));
-                } catch (e) {}
-            }
-            _dataCache = JSON.parse(JSON.stringify(defaultData));
-            return JSON.parse(JSON.stringify(_dataCache));
-        }
-
-        async function saveData(data) {
-            data = normalizeData(data);
-            _dataCache = JSON.parse(JSON.stringify(data));
-            // 优先API
-            try {
-                await apiPost('/api/data', data);
-            } catch (e) {
-                console.warn('API保存失败，降级localStorage:', e.message);
-                try {
-                    localStorage.setItem('hh_website_content', JSON.stringify(data));
-                } catch (err) {
-                    alert('保存失败：' + err.message);
-                    return false;
+                    const parsed = JSON.parse(stored);
+                    return normalizeData(parsed);
+                } catch (e) {
+                    return JSON.parse(JSON.stringify(defaultData));
                 }
             }
-            return true;
+            return JSON.parse(JSON.stringify(defaultData));
         }
 
-        // ===== 图片上传（调用API） =====
-        async function handleImageUpload(event, opts, onDone) {
+        // 保存数据
+        function saveData(data, silent) {
             try {
-                var file = event.target.files && event.target.files[0];
-                if (!file) return;
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('图片过大（超过 10MB），请选择较小的图片。');
-                    return;
-                }
-                // 先本地预览
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById(opts.previewId).src = e.target.result;
-                    document.getElementById(opts.previewId).style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-
-                // 上传到服务器
-                var result = await apiUpload(file);
-                if (result.ok) {
-                    if (opts.hiddenId) {
-                        var hiddenEl = document.getElementById(opts.hiddenId);
-                        if (hiddenEl) hiddenEl.value = result.filename;
-                    }
-                    if (typeof onDone === 'function') {
-                        try { onDone(result.filename); } catch (err) { console.error(err); }
-                    }
-                } else {
-                    alert('上传失败：' + (result.error || '未知错误'));
-                }
+                localStorage.setItem('hh_website_content', JSON.stringify(data));
+                return true;
             } catch (err) {
-                console.error(err);
-                alert('图片处理失败：' + (err && err.message ? err.message : err));
+                console.error('保存失败：', err);
+                if (!silent) {
+                    const size = checkDataSize(data);
+                    alert(
+                        '保存失败：本地存储空间不足。\n\n' +
+                        '当前要保存的数据大小约为 ' + size.mb.toFixed(2) + ' MB，' +
+                        '而浏览器通常为单域名提供约 5MB 的本地存储。\n\n' +
+                        '建议：\n' +
+                        '1. 使用更小/更清晰的图片；\n' +
+                        '2. 删除不需要的旧产品或Banner；\n' +
+                        '3. 点击"重置数据"清理存储后再上传。'
+                    );
+                }
+                return false;
             }
         }
 
-        function resetFileInput(id) {
-            var el = document.getElementById(id);
-            if (el) el.value = '';
-        }
-
-        // ===== 登录检查 =====
+        // 检查登录
         function checkLogin() {
-            var session = localStorage.getItem('hh_admin_session');
+            const session = localStorage.getItem('hh_admin_session');
             if (!session) {
                 window.location.href = 'admin-login.html';
                 return;
             }
             try {
-                var data = JSON.parse(session);
+                const data = JSON.parse(session);
                 if (data.expiresAt < Date.now()) {
                     localStorage.removeItem('hh_admin_session');
                     window.location.href = 'admin-login.html';
@@ -621,75 +643,76 @@
             }
         }
 
+        // 退出登录
         function logout() {
             localStorage.removeItem('hh_admin_session');
             window.location.href = 'admin-login.html';
         }
 
-        // ===== 面板切换 =====
+        // 显示面板
         function showPanel(name, evt) {
             try {
-                document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
-                document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 document.getElementById('panel-' + name).classList.add('active');
-                if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+                if (evt && evt.currentTarget) {
+                    evt.currentTarget.classList.add('active');
+                }
                 if (name === 'dashboard') updateDashboard();
                 if (name === 'banners') renderBanners();
                 if (name === 'products') renderProducts();
                 if (name === 'company') loadCompanyForm();
             } catch (err) {
                 console.error('切换面板失败：', err);
+                alert('切换面板失败：' + err.message);
             }
         }
 
-        // ===== 仪表盘 =====
-        async function updateDashboard() {
-            var data = await getData();
+        // 更新仪表盘
+        function updateDashboard() {
+            const data = getData();
             document.getElementById('statBanners').textContent = data.banners.length;
             document.getElementById('statProducts').textContent = data.products.length;
         }
 
-        // ===== Banner管理 =====
-        async function renderBanners() {
-            var data = await getData();
-            var tbody = document.getElementById('bannersTable');
-            tbody.innerHTML = data.banners.map(function(b) {
-                return '<tr>' +
-                    '<td><img src="' + imgSrc(b.image) + '" alt="' + b.title + '"></td>' +
-                    '<td>' + b.title + '</td>' +
-                    '<td>' + b.subtitle + '</td>' +
-                    '<td>' +
-                        '<button class="btn btn-primary btn-sm" onclick="editBanner(' + b.id + ')">编辑</button> ' +
-                        '<button class="btn btn-danger btn-sm" onclick="deleteBanner(' + b.id + ')">删除</button>' +
-                    '</td></tr>';
-            }).join('');
+        // 渲染Banners
+        function renderBanners() {
+            const data = getData();
+            const tbody = document.getElementById('bannersTable');
+            tbody.innerHTML = data.banners.map(b => `
+                <tr>
+                    <td><img src="${b.image}" alt="${b.title}"></td>
+                    <td>${b.title}</td>
+                    <td>${b.subtitle}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editBanner(${b.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteBanner(${b.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        function openBannerModal(id) {
+        // Banner弹窗
+        function openBannerModal(id = null) {
             document.getElementById('bannerModal').classList.add('active');
             document.getElementById('bannerForm').reset();
             document.getElementById('bannerImagePreview').style.display = 'none';
             document.getElementById('bannerId').value = '';
-            document.getElementById('bannerImage').value = '';
             document.getElementById('bannerModalTitle').textContent = '添加Banner';
-
+            
             if (id) {
-                getData().then(function(data) {
-                    var banner = data.banners.find(function(b) { return b.id === id; });
-                    if (banner) {
-                        document.getElementById('bannerId').value = banner.id;
-                        document.getElementById('bannerImage').value = banner.image || '';
-                        var src = imgSrc(banner.image);
-                        if (banner.image) {
-                            document.getElementById('bannerImagePreview').src = src;
-                            document.getElementById('bannerImagePreview').style.display = 'block';
-                        }
-                        document.getElementById('bannerTitle').value = banner.title;
-                        document.getElementById('bannerSubtitle').value = banner.subtitle;
-                        document.getElementById('bannerLink').value = banner.link;
-                        document.getElementById('bannerModalTitle').textContent = '编辑Banner';
-                    }
-                });
+                const data = getData();
+                const banner = data.banners.find(b => b.id === id);
+                if (banner) {
+                    document.getElementById('bannerId').value = banner.id;
+                    document.getElementById('bannerImage').value = banner.image;
+                    document.getElementById('bannerImagePreview').src = banner.image;
+                    document.getElementById('bannerImagePreview').style.display = 'block';
+                    document.getElementById('bannerTitle').value = banner.title;
+                    document.getElementById('bannerSubtitle').value = banner.subtitle;
+                    document.getElementById('bannerLink').value = banner.link;
+                    document.getElementById('bannerModalTitle').textContent = '编辑Banner';
+                }
             }
         }
 
@@ -699,68 +722,80 @@
 
         function editBanner(id) { openBannerModal(id); }
 
-        async function deleteBanner(id) {
-            if (!confirm('确定要删除这个Banner吗？')) return;
-            var data = await getData();
-            var banner = data.banners.find(function(b) { return b.id === id; });
-            var oldImage = banner ? banner.image : '';
-            data.banners = data.banners.filter(function(b) { return b.id !== id; });
-            await saveData(data);
-            // 删除关联图片文件
-            if (oldImage && oldImage.indexOf('.') > 0) {
-                try { await apiDeleteImage(oldImage); } catch (e) {}
+        function deleteBanner(id) {
+            if (confirm('确定要删除这个Banner吗？')) {
+                const data = getData();
+                data.banners = data.banners.filter(b => b.id !== id);
+                saveData(data);
+                renderBanners();
             }
-            renderBanners();
         }
 
-        async function handleBannerImageUpload(event) {
-            // 如果是编辑模式，先删除旧图
-            var bannerId = document.getElementById('bannerId').value;
-            if (bannerId) {
-                var data = await getData();
-                var old = data.banners.find(function(b) { return b.id === parseInt(bannerId, 10); });
-                if (old && old.image && old.image.indexOf('.') > 0) {
-                    try { await apiDeleteImage(old.image); } catch (e) {}
-                }
-            }
+        function handleBannerImageUpload(event) {
             handleImageUpload(event, {
+                compressFn: compressBanner,
                 previewId: 'bannerImagePreview',
                 hiddenId: 'bannerImage'
             });
         }
 
         // Banner表单提交
-        document.getElementById('bannerForm').addEventListener('submit', async function(e) {
+        document.getElementById('bannerForm').addEventListener('submit', function(e) {
             e.preventDefault();
             try {
-                var data = await getData();
-                var id = document.getElementById('bannerId').value;
-                var imageVal = document.getElementById('bannerImage').value;
-                var title = document.getElementById('bannerTitle').value || '';
-                var subtitle = document.getElementById('bannerSubtitle').value || '';
-                var link = document.getElementById('bannerLink').value || '#products';
+                const data = getData();
+                const id = document.getElementById('bannerId').value;
+                const hiddenImg = document.getElementById('bannerImage').value;
+                const title = document.getElementById('bannerTitle').value || '';
+                const subtitle = document.getElementById('bannerSubtitle').value || '';
+                const link = document.getElementById('bannerLink').value || '#products';
 
+                // 如果是编辑，用户没有重新上传图片，则保留原图片
+                let imageToUse = hiddenImg;
                 if (id) {
-                    var old = data.banners.find(function(b) { return b.id === parseInt(id, 10); });
-                    if (old && !imageVal) imageVal = old.image || '';
+                    const old = data.banners.find(function (b) { return b.id === parseInt(id, 10); });
+                    if (old && !imageToUse) {
+                        imageToUse = old.image || '';
+                    }
                 }
-                if (!imageVal) {
+                if (!imageToUse) {
                     alert('请先上传Banner图片');
                     return;
                 }
 
-                var finalId = id ? parseInt(id, 10) : Date.now();
-                var banner = { id: finalId, image: imageVal, title: title, subtitle: subtitle, link: link };
+                const banner = {
+                    id: id ? parseInt(id, 10) : Date.now(),
+                    image: imageToUse,
+                    title: title,
+                    subtitle: subtitle,
+                    link: link
+                };
 
                 if (id) {
-                    var index = data.banners.findIndex(function(b) { return b.id === parseInt(id, 10); });
+                    const index = data.banners.findIndex(b => b.id === parseInt(id, 10));
                     if (index === -1) data.banners.push(banner);
                     else data.banners[index] = banner;
                 } else {
                     data.banners.push(banner);
                 }
 
-                await saveData(data);
+                const sizeInfo = checkDataSize(data);
+                if (sizeInfo.exceed) {
+                    if (!confirm(
+                        '当前整个站点（含所有 Banner、产品图、海报、Logo）的存储大小约为 ' +
+                        sizeInfo.mb.toFixed(2) + ' MB。\n\n' +
+                        '浏览器单域名的 localStorage 上限约为 5MB。\n' +
+                        '（注：图片以 base64 存储会比原文件大 ~1.33 倍，且是整体存储，不是单张图片）\n\n' +
+                        '是否仍然继续保存？'
+                    )) {
+                        return;
+                    }
+                }
+
+                const ok = saveData(data);
+                if (!ok) {
+                    return;
+                }
                 closeBannerModal();
                 renderBanners();
                 alert('Banner已保存！');
@@ -770,65 +805,62 @@
             }
         });
 
-        // ===== 产品管理 =====
-        async function renderProducts() {
-            var data = await getData();
-            var tbody = document.getElementById('productsTable');
-            tbody.innerHTML = data.products.map(function(p) {
-                return '<tr>' +
-                    '<td><img src="' + imgSrc(p.image) + '" alt="' + p.title + '"></td>' +
-                    '<td>' + p.title + '</td>' +
-                    '<td>' + p.destination + '</td>' +
-                    '<td>' + p.price + '</td>' +
-                    '<td>' + p.days + '</td>' +
-                    '<td>' +
-                        '<button class="btn btn-primary btn-sm" onclick="editProduct(' + p.id + ')">编辑</button> ' +
-                        '<button class="btn btn-danger btn-sm" onclick="deleteProduct(' + p.id + ')">删除</button>' +
-                    '</td></tr>';
-            }).join('');
+        // 渲染产品
+        function renderProducts() {
+            const data = getData();
+            const tbody = document.getElementById('productsTable');
+            tbody.innerHTML = data.products.map(p => `
+                <tr>
+                    <td><img src="${p.image}" alt="${p.title}"></td>
+                    <td>${p.title}</td>
+                    <td>${p.destination}</td>
+                    <td>${p.price}</td>
+                    <td>${p.days}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editProduct(${p.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        var productTags = [];
+        // 产品弹窗
+        let productTags = [];
 
-        function openProductModal(id) {
+        function openProductModal(id = null) {
             document.getElementById('productModal').classList.add('active');
             document.getElementById('productForm').reset();
             document.getElementById('productImagePreview').style.display = 'none';
             document.getElementById('posterImagePreview').style.display = 'none';
             document.getElementById('posterImage').value = '';
-            document.getElementById('productImage').value = '';
             document.getElementById('productId').value = '';
             document.getElementById('productModalTitle').textContent = '添加产品';
             productTags = [];
             renderProductTags();
-
+            
             if (id) {
-                getData().then(function(data) {
-                    var product = data.products.find(function(p) { return p.id === id; });
-                    if (product) {
-                        document.getElementById('productId').value = product.id;
-                        document.getElementById('productImage').value = product.image || '';
-                        var imgSrc1 = imgSrc(product.image);
-                        if (product.image) {
-                            document.getElementById('productImagePreview').src = imgSrc1;
-                            document.getElementById('productImagePreview').style.display = 'block';
-                        }
-                        if (product.poster) {
-                            document.getElementById('posterImage').value = product.poster;
-                            document.getElementById('posterImagePreview').src = imgSrc(product.poster);
-                            document.getElementById('posterImagePreview').style.display = 'block';
-                        }
-                        document.getElementById('productTitle').value = product.title;
-                        document.getElementById('productDestination').value = product.destination;
-                        document.getElementById('productPrice').value = product.price;
-                        document.getElementById('productDays').value = product.days;
-                        document.getElementById('productDesc').value = product.description;
-                        document.getElementById('productFeaturesDetail').value = (product.featuresDetail || []).join('\\n');
-                        productTags = (product.features || []).slice();
-                        renderProductTags();
-                        document.getElementById('productModalTitle').textContent = '编辑产品';
+                const data = getData();
+                const product = data.products.find(p => p.id === id);
+                if (product) {
+                    document.getElementById('productId').value = product.id;
+                    document.getElementById('productImage').value = product.image;
+                    document.getElementById('productImagePreview').src = product.image;
+                    document.getElementById('productImagePreview').style.display = 'block';
+                    if (product.poster) {
+                        document.getElementById('posterImage').value = product.poster;
+                        document.getElementById('posterImagePreview').src = product.poster;
+                        document.getElementById('posterImagePreview').style.display = 'block';
                     }
-                });
+                    document.getElementById('productTitle').value = product.title;
+                    document.getElementById('productDestination').value = product.destination;
+                    document.getElementById('productPrice').value = product.price;
+                    document.getElementById('productDays').value = product.days;
+                    document.getElementById('productDesc').value = product.description;
+                    document.getElementById('productFeaturesDetail').value = (product.featuresDetail || []).join('\n');
+                    productTags = [...(product.features || [])];
+                    renderProductTags();
+                    document.getElementById('productModalTitle').textContent = '编辑产品';
+                }
             }
         }
 
@@ -838,55 +870,38 @@
 
         function editProduct(id) { openProductModal(id); }
 
-        async function deleteProduct(id) {
-            if (!confirm('确定要删除这个产品吗？')) return;
-            var data = await getData();
-            var product = data.products.find(function(p) { return p.id === id; });
-            var oldImg = product ? product.image : '';
-            var oldPoster = product ? product.poster : '';
-            data.products = data.products.filter(function(p) { return p.id !== id; });
-            await saveData(data);
-            if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
-            if (oldPoster && oldPoster.indexOf('.') > 0) { try { await apiDeleteImage(oldPoster); } catch (e) {} }
-            renderProducts();
+        function deleteProduct(id) {
+            if (confirm('确定要删除这个产品吗？')) {
+                const data = getData();
+                data.products = data.products.filter(p => p.id !== id);
+                saveData(data);
+                renderProducts();
+            }
         }
 
-        async function handleProductImageUpload(event) {
-            var productId = document.getElementById('productId').value;
-            if (productId) {
-                var data = await getData();
-                var old = data.products.find(function(p) { return p.id === parseInt(productId, 10); });
-                if (old && old.image && old.image.indexOf('.') > 0) {
-                    try { await apiDeleteImage(old.image); } catch (e) {}
-                }
-            }
+        function handleProductImageUpload(event) {
             handleImageUpload(event, {
+                compressFn: compressProduct,
                 previewId: 'productImagePreview',
                 hiddenId: 'productImage'
             });
         }
 
-        async function handlePosterImageUpload(event) {
-            var productId = document.getElementById('productId').value;
-            if (productId) {
-                var data = await getData();
-                var old = data.products.find(function(p) { return p.id === parseInt(productId, 10); });
-                if (old && old.poster && old.poster.indexOf('.') > 0) {
-                    try { await apiDeleteImage(old.poster); } catch (e) {}
-                }
-            }
+        // 海报图片上传
+        function handlePosterImageUpload(event) {
             handleImageUpload(event, {
+                compressFn: compressPoster,
                 previewId: 'posterImagePreview',
                 hiddenId: 'posterImage'
             });
         }
 
         function renderProductTags() {
-            var container = document.getElementById('productTagsInput');
-            var input = container.querySelector('input');
+            const container = document.getElementById('productTagsInput');
+            const input = container.querySelector('input');
             container.innerHTML = '';
-            productTags.forEach(function(tag, index) {
-                container.innerHTML += '<span class="tag">' + tag + ' <span onclick="removeTag(' + index + ')">&times;</span></span>';
+            productTags.forEach((tag, index) => {
+                container.innerHTML += `<span class="tag">${tag} <span onclick="removeTag(${index})">×</span></span>`;
             });
             container.appendChild(input);
         }
@@ -894,8 +909,8 @@
         function addTag(event, type) {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                var value = event.target.value.trim();
-                if (value && type === 'productTags' && productTags.indexOf(value) === -1) {
+                const value = event.target.value.trim();
+                if (value && type === 'productTags' && !productTags.includes(value)) {
                     productTags.push(value);
                     renderProductTags();
                     event.target.value = '';
@@ -909,32 +924,35 @@
         }
 
         // 产品表单提交
-        document.getElementById('productForm').addEventListener('submit', async function(e) {
+        document.getElementById('productForm').addEventListener('submit', function(e) {
             e.preventDefault();
             try {
-                var data = await getData();
-                var id = document.getElementById('productId').value;
-                var imgVal = document.getElementById('productImage').value;
-                var posterVal = document.getElementById('posterImage').value;
-                var featuresDetail = document.getElementById('productFeaturesDetail').value
-                    .split('\\n').map(function(f) { return f.trim(); }).filter(Boolean);
+                const data = getData();
+                const id = document.getElementById('productId').value;
+                const featuresDetail = document.getElementById('productFeaturesDetail').value
+                    .split('\n').map(function (f) { return f.trim(); }).filter(Boolean);
 
+                // 编辑时若未重新上传图片，保留原图片
+                let imgToUse = document.getElementById('productImage').value;
+                let posterToUse = document.getElementById('posterImage').value;
                 if (id) {
-                    var old = data.products.find(function(p) { return p.id === parseInt(id, 10); });
+                    const old = data.products.find(function (p) { return p.id === parseInt(id, 10); });
                     if (old) {
-                        if (!imgVal) imgVal = old.image || '';
-                        if (!posterVal) posterVal = old.poster || '';
+                        if (!imgToUse) imgToUse = old.image || '';
+                        if (!posterToUse) posterToUse = old.poster || '';
                     }
                 }
 
-                var title = document.getElementById('productTitle').value;
-                if (!title) { alert('请填写产品名称'); return; }
+                const title = document.getElementById('productTitle').value;
+                if (!title) {
+                    alert('请填写产品名称');
+                    return;
+                }
 
-                var finalId = id ? parseInt(id, 10) : Date.now();
-                var product = {
-                    id: finalId,
-                    image: imgVal,
-                    poster: posterVal,
+                const product = {
+                    id: id ? parseInt(id, 10) : Date.now(),
+                    image: imgToUse,
+                    poster: posterToUse,
                     title: title,
                     destination: document.getElementById('productDestination').value || '',
                     price: document.getElementById('productPrice').value || '',
@@ -945,14 +963,30 @@
                 };
 
                 if (id) {
-                    var index = data.products.findIndex(function(p) { return p.id === parseInt(id, 10); });
+                    const index = data.products.findIndex(function (p) { return p.id === parseInt(id, 10); });
                     if (index === -1) data.products.push(product);
                     else data.products[index] = product;
                 } else {
                     data.products.push(product);
                 }
 
-                await saveData(data);
+                const sizeInfo = checkDataSize(data);
+                if (sizeInfo.exceed) {
+                    if (!confirm(
+                        '当前整个站点（含所有 Banner、产品图、海报、Logo）的存储大小约为 ' +
+                        sizeInfo.mb.toFixed(2) + ' MB。\n\n' +
+                        '浏览器单域名的 localStorage 上限约为 5MB。\n' +
+                        '（注：图片以 base64 存储会比原文件大 ~1.33 倍，且是整体存储，不是单张图片）\n\n' +
+                        '是否仍然继续保存？'
+                    )) {
+                        return;
+                    }
+                }
+
+                const ok = saveData(data);
+                if (!ok) {
+                    return;
+                }
                 closeProductModal();
                 renderProducts();
                 alert('产品已保存！');
@@ -962,197 +996,239 @@
             }
         });
 
-        // ===== 公司信息 =====
-        async function loadCompanyForm() {
-            var data = await getData();
+        // 加载公司表单
+        function loadCompanyForm() {
+            const data = getData();
             document.getElementById('companyName').value = data.company.name;
             document.getElementById('companyPhone').value = data.company.phone;
             document.getElementById('companyEmail').value = data.company.email;
             document.getElementById('companyHours').value = data.company.businessHours;
             document.getElementById('companyAddress').value = data.company.address;
             document.getElementById('companyDesc').value = data.company.description;
-
+            
             if (data.company.aboutImage) {
-                document.getElementById('aboutImagePreview').src = imgSrc(data.company.aboutImage);
+                document.getElementById('aboutImagePreview').src = data.company.aboutImage;
                 document.getElementById('aboutImagePreview').style.display = 'block';
             }
+
+            // 加载 logo 和二维码预览
             if (data.company.logo) {
-                document.getElementById('logoPreview').src = imgSrc(data.company.logo);
+                document.getElementById('logoPreview').src = data.company.logo;
                 document.getElementById('logoPreview').style.display = 'block';
             }
             if (data.company.wechatQr) {
-                document.getElementById('wechatQrPreview').src = imgSrc(data.company.wechatQr);
+                document.getElementById('wechatQrPreview').src = data.company.wechatQr;
                 document.getElementById('wechatQrPreview').style.display = 'block';
             }
             if (data.company.videoQr) {
-                document.getElementById('videoQrPreview').src = imgSrc(data.company.videoQr);
+                document.getElementById('videoQrPreview').src = data.company.videoQr;
                 document.getElementById('videoQrPreview').style.display = 'block';
             }
-
+            
             renderStatsEditor(data.company.stats || []);
         }
 
         function renderStatsEditor(stats) {
-            var container = document.getElementById('statsEditor');
-            container.innerHTML = stats.map(function(s, i) {
-                return '<div style="display: flex; gap: 1rem; margin-bottom: 1rem;">' +
-                    '<input type="text" value="' + s.number + '" placeholder="数值" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px" onchange="updateStat(' + i + ',\\'number\\',this.value)">' +
-                    '<input type="text" value="' + s.label + '" placeholder="标签" style="flex:2;padding:10px;border:1px solid #ddd;border-radius:6px" onchange="updateStat(' + i + ',\\'label\\',this.value)">' +
-                    '<button class="btn btn-danger btn-sm" onclick="removeStat(' + i + ')">删除</button></div>';
-            }).join('');
+            const container = document.getElementById('statsEditor');
+            container.innerHTML = stats.map((s, i) => `
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <input type="text" value="${s.number}" placeholder="数值（如：10+）" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" onchange="updateStat(${i}, 'number', this.value)">
+                    <input type="text" value="${s.label}" placeholder="标签（如：年行业经验）" style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" onchange="updateStat(${i}, 'label', this.value)">
+                    <button class="btn btn-danger btn-sm" onclick="removeStat(${i})">删除</button>
+                </div>
+            `).join('');
         }
 
-        async function updateStat(index, field, value) {
-            var data = await getData();
+        function updateStat(index, field, value) {
+            const data = getData();
             data.company.stats[index][field] = value;
-            await saveData(data);
+            saveData(data);
         }
 
-        async function removeStat(index) {
-            var data = await getData();
+        function removeStat(index) {
+            const data = getData();
             data.company.stats.splice(index, 1);
-            await saveData(data);
+            saveData(data);
             renderStatsEditor(data.company.stats);
         }
 
-        async function addStat() {
-            var data = await getData();
+        function addStat() {
+            const data = getData();
             data.company.stats.push({ number: '0', label: '新统计项' });
-            await saveData(data);
+            saveData(data);
             renderStatsEditor(data.company.stats);
         }
 
-        // 公司图片上传
         function handleAboutImageUpload(event) {
-            handleImageUpload(event, { previewId: 'aboutImagePreview' }, async function(filename) {
-                var data = await getData();
-                var oldImg = data.company.aboutImage;
-                data.company.aboutImage = filename;
-                await saveData(data);
-                if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
+            handleImageUpload(event, {
+                compressFn: compressProduct,
+                previewId: 'aboutImagePreview'
+            }, function (dataUrl) {
+                const data = getData();
+                data.company.aboutImage = dataUrl;
+                saveData(data);
             });
         }
 
+        // Logo上传
         function handleLogoUpload(event) {
-            handleImageUpload(event, { previewId: 'logoPreview' }, async function(filename) {
-                var data = await getData();
-                var oldImg = data.company.logo;
-                data.company.logo = filename;
-                await saveData(data);
-                if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
+            handleImageUpload(event, {
+                compressFn: compressLogo,
+                previewId: 'logoPreview'
+            }, function (dataUrl) {
+                const data = getData();
+                data.company.logo = dataUrl;
+                saveData(data);
             });
         }
-
-        async function clearLogo() {
-            if (!confirm('确定要移除Logo吗？')) return;
-            var data = await getData();
-            var oldImg = data.company.logo;
-            data.company.logo = '';
-            await saveData(data);
-            if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
-            document.getElementById('logoPreview').style.display = 'none';
+        function clearLogo() {
+            try {
+                if (!confirm('确定要移除Logo吗？')) return;
+                const data = getData();
+                data.company.logo = '';
+                saveData(data);
+                document.getElementById('logoPreview').style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert('操作失败：' + err.message);
+            }
         }
 
+        // 公众号二维码上传
         function handleWechatQrUpload(event) {
-            handleImageUpload(event, { previewId: 'wechatQrPreview' }, async function(filename) {
-                var data = await getData();
-                var oldImg = data.company.wechatQr;
-                data.company.wechatQr = filename;
-                await saveData(data);
-                if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
+            handleImageUpload(event, {
+                compressFn: compressQr,
+                previewId: 'wechatQrPreview'
+            }, function (dataUrl) {
+                const data = getData();
+                data.company.wechatQr = dataUrl;
+                saveData(data);
             });
         }
-
-        async function clearWechatQr() {
-            if (!confirm('确定要移除公众号二维码吗？')) return;
-            var data = await getData();
-            var oldImg = data.company.wechatQr;
-            data.company.wechatQr = '';
-            await saveData(data);
-            if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
-            document.getElementById('wechatQrPreview').style.display = 'none';
+        function clearWechatQr() {
+            try {
+                if (!confirm('确定要移除公众号二维码吗？')) return;
+                const data = getData();
+                data.company.wechatQr = '';
+                saveData(data);
+                document.getElementById('wechatQrPreview').style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert('操作失败：' + err.message);
+            }
         }
 
+        // 视频号二维码上传
         function handleVideoQrUpload(event) {
-            handleImageUpload(event, { previewId: 'videoQrPreview' }, async function(filename) {
-                var data = await getData();
-                var oldImg = data.company.videoQr;
-                data.company.videoQr = filename;
-                await saveData(data);
-                if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
+            handleImageUpload(event, {
+                compressFn: compressQr,
+                previewId: 'videoQrPreview'
+            }, function (dataUrl) {
+                const data = getData();
+                data.company.videoQr = dataUrl;
+                saveData(data);
             });
         }
-
-        async function clearVideoQr() {
-            if (!confirm('确定要移除视频号二维码吗？')) return;
-            var data = await getData();
-            var oldImg = data.company.videoQr;
-            data.company.videoQr = '';
-            await saveData(data);
-            if (oldImg && oldImg.indexOf('.') > 0) { try { await apiDeleteImage(oldImg); } catch (e) {} }
-            document.getElementById('videoQrPreview').style.display = 'none';
+        function clearVideoQr() {
+            try {
+                if (!confirm('确定要移除视频号二维码吗？')) return;
+                const data = getData();
+                data.company.videoQr = '';
+                saveData(data);
+                document.getElementById('videoQrPreview').style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert('操作失败：' + err.message);
+            }
         }
 
         // 公司表单提交
-        document.getElementById('companyForm').addEventListener('submit', async function(e) {
+        document.getElementById('companyForm').addEventListener('submit', function(e) {
             e.preventDefault();
             try {
-                var data = await getData();
+                const data = getData();
                 data.company.name = document.getElementById('companyName').value;
                 data.company.phone = document.getElementById('companyPhone').value;
                 data.company.email = document.getElementById('companyEmail').value;
                 data.company.businessHours = document.getElementById('companyHours').value;
                 data.company.address = document.getElementById('companyAddress').value;
                 data.company.description = document.getElementById('companyDesc').value;
-                await saveData(data);
-                alert('公司信息已保存！');
+                // logo / 二维码 / 关于我们图片 均已在各自上传处理器中保存，这里再次同步一次
+                data.company.aboutImage = data.company.aboutImage || '';
+                data.company.logo = data.company.logo || '';
+                data.company.wechatQr = data.company.wechatQr || '';
+                data.company.videoQr = data.company.videoQr || '';
+                saveData(data);
+                alert('公司基本信息已保存！（图片/logo/二维码在上传时已自动保存）');
             } catch (err) {
                 console.error(err);
                 alert('保存公司信息失败：' + err.message);
             }
         });
 
-        // ===== 密码修改 =====
+        // 修改密码
         document.getElementById('passwordForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            var current = this.elements.currentPassword.value;
-            var newPass = this.elements.newPassword.value;
-            var confirmPass = this.elements.confirmPassword.value;
-            var admin;
             try {
-                admin = JSON.parse(localStorage.getItem('hh_admin') || '{"username":"admin","password":"admin123"}');
+                const current = this.elements.currentPassword.value;
+                const newPass = this.elements.newPassword.value;
+                const confirmPass = this.elements.confirmPassword.value;
+
+                let admin;
+                try {
+                    admin = JSON.parse(localStorage.getItem('hh_admin') || '{"username":"admin","password":"admin123"}');
+                } catch (err) {
+                    admin = { username: 'admin', password: 'admin123' };
+                }
+
+                if (current !== admin.password) {
+                    alert('当前密码错误！');
+                    return;
+                }
+
+                if (!newPass || newPass !== confirmPass) {
+                    alert('两次输入的新密码不一致！');
+                    return;
+                }
+
+                const newAdmin = Object.assign({}, admin, { password: newPass });
+                localStorage.setItem('hh_admin', JSON.stringify(newAdmin));
+                alert('密码修改成功！');
+                this.reset();
             } catch (err) {
-                admin = { username: 'admin', password: 'admin123' };
+                console.error(err);
+                alert('修改密码失败：' + err.message);
             }
-            if (current !== admin.password) { alert('当前密码错误！'); return; }
-            if (!newPass || newPass !== confirmPass) { alert('两次输入的新密码不一致！'); return; }
-            localStorage.setItem('hh_admin', JSON.stringify({ username: admin.username, password: newPass }));
-            alert('密码修改成功！');
-            this.reset();
         });
 
-        // ===== 重置数据 =====
-        async function resetData() {
-            if (!confirm('确定要重置所有数据吗？这将恢复为默认内容，且不可恢复。')) return;
-            // 清理localStorage
-            try {
-                var keys = [];
-                for (var i = 0; i < localStorage.length; i++) {
-                    var key = localStorage.key(i);
-                    if (key && key.indexOf('hh_') === 0 && key !== 'hh_admin_session' && key !== 'hh_admin') {
-                        keys.push(key);
+        // 重置数据
+        function resetData() {
+            if (confirm('确定要重置所有数据吗？这将恢复为默认内容，并清理后台本地存储。')) {
+                // 为了避免之前上传的大图继续占用配额，先清理整个站点下的 hh_ 前缀 key
+                try {
+                    const keys = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.indexOf('hh_') === 0) {
+                            keys.push(key);
+                        }
                     }
+                    keys.forEach(function (k) {
+                        // 保留管理员会话 & 密码信息
+                        if (k === 'hh_admin_session' || k === 'hh_admin') {
+                            return;
+                        }
+                        localStorage.removeItem(k);
+                    });
+                } catch (err) {
+                    console.error('清理旧数据失败：', err);
                 }
-                keys.forEach(function(k) { localStorage.removeItem(k); });
-            } catch (err) {}
-            // 通过API重置数据
-            await saveData(JSON.parse(JSON.stringify(defaultData)));
-            _dataCache = null;
-            alert('数据已重置为默认值！');
-            location.reload();
+                alert('数据已重置为默认值！现在可以重新上传图片了。');
+                location.reload();
+            }
         }
 
-        // ===== 初始化 =====
+        // 初始化
         checkLogin();
         updateDashboard();
     </script>
