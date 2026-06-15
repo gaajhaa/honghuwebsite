@@ -121,4 +121,4 @@ if __name__ == "__main__":
     print(f"  前台: http://localhost:8800")
     print(f"  后台: http://localhost:8800/admin-login")
     print(f"  图片目录: {IMAGES_DIR}")
-    app.run(host="0.0.0.0", port=8800, debug=True)
+    app.run(host="0.0.0.0", port=8800, debug=False)

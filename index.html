@@ -6,6 +6,52 @@
     <title>北京鸿鹄国际旅行社有限公司</title>
     
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== 公告栏 ===== */
+        .announcement-bar {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            background: linear-gradient(135deg, #e8f4fd 0%, #f0f7ff 50%, #e8f4fd 100%);
+            border-bottom: 1px solid #cce4f7;
+            padding: 10px 0;
+            position: relative;
+        }
+        .announcement-bar .container {
+            overflow: hidden;
+        }
+        .announcement-bar:hover .container {
+            overflow: visible;
+        }
+        .announcement-bar:hover .announcement-text {
+            animation-play-state: paused;
+            white-space: normal;
+        }
+        .announcement-bar:hover .announcement-text::after {
+            display: none;
+        }
+        .announcement-text {
+            display: inline-block;
+            color: #106eb8;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            animation: announcement-scroll 20s linear infinite;
+            padding: 0 40px;
+            cursor: default;
+        }
+        .announcement-text::before {
+            content: "📢 ";
+        }
+        .announcement-text::after {
+            content: attr(data-text);
+            padding-left: 3em;
+        }
+        @keyframes announcement-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+    </style>
 </head>
 <body>
     <!-- 导航栏 -->
@@ -39,6 +85,13 @@
             <div class="products-grid" id="productsGrid"></div>
         </div>
     </section>
+
+    <!-- 公告栏 -->
+    <div class="announcement-bar">
+        <div class="container">
+            <div class="announcement-text" id="announcementText"></div>
+        </div>
+    </div>
 
     <!-- 关于我们 -->
     <section id="about" class="section about-section">
@@ -78,13 +131,7 @@
 
     <!-- 页脚 -->
     <footer class="footer">
-        <div class="container footer-content">
-            <div class="footer-section"><h3>鸿鹄国际旅行社</h3><p>专业的旅游服务提供商，为您打造难忘的旅行体验。</p></div>
-            <div class="footer-section"><h3>快速链接</h3><ul class="footer-links"><li><a href="#home">首页</a></li><li><a href="#products">旅游产品</a></li><li><a href="#about">关于我们</a></li><li><a href="#contact">联系我们</a></li></ul></div>
-            <div class="footer-section"><h3>产品服务</h3><ul class="footer-links"><li><a href="#">国内旅游</a></li><li><a href="#">出境旅游</a></li><li><a href="#">定制旅游</a></li><li><a href="#">商务会议</a></li></ul></div>
-            <div class="footer-section" id="footerContact"></div>
-        </div>
-        <div class="footer-bottom"><p>&copy; 2024 北京鸿鹄国际旅行社有限公司 版权所有</p></div>
+        <div class="footer-bottom"><p>&copy; 2026 北京鸿鹄国际旅行社有限公司 版权所有</p></div>
     </footer>
 
     <!-- 产品海报弹窗（全屏查看 + 滚轮缩放 + 拖动平移） -->

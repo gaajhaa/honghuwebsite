@@ -1,33 +1,154 @@
 {
   "banners": [
-    { "id": 1, "image": "", "title": "探索世界 感受美好", "subtitle": "专业的旅游服务，为您打造难忘的旅行体验", "link": "#products" },
-    { "id": 2, "image": "", "title": "云美云南 心之所向", "subtitle": "云南旅游首选品牌，品质保障", "link": "#products" },
-    { "id": 3, "image": "", "title": "东南亚风情之旅", "subtitle": "泰国、越南、缅甸精品线路", "link": "#products" }
-  ],
-  "products": [
-    { "id": 1, "title": "昆明-大理-丽江 深度游", "destination": "云南 · 昆明、大理、丽江", "price": "¥2,980起", "days": "6天5晚", "image": "", "poster": "", "features": ["含机票", "五星酒店", "纯玩无购物"], "description": "本线路带您深度体验云南三大经典目的地", "featuresDetail": ["全程五星酒店住宿", "玉龙雪山冰川公园", "洱海生态廊道骑行", "大理古城深度游", "丽江古城自由活动", "含往返机票"] },
-    { "id": 2, "title": "西双版纳 热带雨林之旅", "destination": "云南 · 西双版纳", "price": "¥2,580起", "days": "5天4晚", "image": "", "poster": "", "features": ["含机票", "特色民宿", "亲子游"], "description": "走进神秘的热带雨林", "featuresDetail": ["热带植物园探秘", "野象谷寻踪", "傣族园泼水体验", "星光夜市漫步", "特色傣味美食"] },
-    { "id": 3, "title": "泰国普吉岛 浪漫海岛游", "destination": "泰国 · 普吉岛", "price": "¥3,980起", "days": "7天6晚", "image": "", "poster": "", "features": ["含机票", "海景房", "蜜月首选"], "description": "阳光、沙滩、碧海、蓝天", "featuresDetail": ["芭东海滩度假", "皮皮岛一日游", "攀牙湾出海", "泰式SPA体验", "人妖秀表演", "含往返机票"] },
-    { "id": 4, "title": "越南芽庄 休闲度假游", "destination": "越南 · 芽庄", "price": "¥3,280起", "days": "6天5晚", "image": "", "poster": "", "features": ["含机票", "五星酒店", "海鲜盛宴"], "description": "芽庄，越南最美的海滨城市之一", "featuresDetail": ["芽庄海滩漫步", "珍珠岛乐园", "占婆塔探秘", "泥浆浴体验", "海鲜大餐"] },
-    { "id": 5, "title": "贵州 多彩民族风情游", "destination": "贵州 · 贵阳、黄果树", "price": "¥2,680起", "days": "5天4晚", "image": "", "poster": "", "features": ["含机票", "特色美食", "纯玩团"], "description": "贵州，一个充满民族风情的地方", "featuresDetail": ["黄果树瀑布", "千户苗寨", "镇远古镇", "荔波小七孔", "民族风情表演"] },
-    { "id": 6, "title": "缅甸 神秘佛国之旅", "destination": "缅甸 · 仰光、蒲甘", "price": "¥4,580起", "days": "8天7晚", "image": "", "poster": "", "features": ["含机票", "文化探索", "深度体验"], "description": "走进神秘的佛国缅甸", "featuresDetail": ["仰光大金塔", "蒲甘日出热气球", "曼德勒古城", "乌本桥日落", "茵莱湖泛舟"] }
+    {
+      "id": 1,
+      "image": "ee6df545393945d1b328d15e09a7fbb9.jpg",
+      "link": "#products",
+      "subtitle": "世界之美 尽在新疆",
+      "title": "新疆是个好地方"
+    },
+    {
+      "id": 2,
+      "image": "9f13e043895046fe9dbbcaf1349099a1.jpg",
+      "link": "#products",
+      "subtitle": "云南旅游首选品牌，品质保障",
+      "title": "有一种叫云南的生活"
+    },
+    {
+      "id": 3,
+      "image": "66d6c97a5eac4570a4d276fd40be73bf.jpg",
+      "link": "#products",
+      "subtitle": "尼泊尔 | 越南芽庄 | 老挝",
+      "title": "看世界 真奇妙"
+    }
   ],
   "company": {
-    "name": "北京鸿鹄国际旅行社有限公司",
+    "aboutImage": "8f2a52968d5345a5a9cf0c77c8799938.jpg",
     "address": "北京市东城区兴隆街56号A801",
-    "phone": "010-63456151",
+    "announcement": "欢迎访问北京鸿鹄国际旅行社官方网站。我司作为专业的旅游产品供应商，本网站旨在展示云南、新疆、尼泊尔等热门线路的详细信息。网站内容不直接面向游客提供咨询或预订服务。若您对展示的线路感兴趣，可前往您身边的任何一家旅行社门店进行咨询，我们已与绝大多数旅行社建立了良好的合作关系，以确保为您提供无缝对接的服务体验。",
+    "businessHours": "周一至周五 9:00-18:00",
+    "description": "北京鸿鹄国际旅行社有限公司（简称鸿鹄旅游）创立于 2014 年 10 月，由行业精英管理团队与资深创始人打造。总部位于北京东城区崇文门核心商圈，是股份制企业，注册资金 500 万元。 业务涵盖国内游、出境游、入境旅游，以及航空机票代理、会议服务等。秉承开拓创新精神，在国内外设有 10 家驻外办事处及分支机构，销售网络覆盖京津冀辽区县。 公司成立早期以云南旅游起步，逐步开发国内多处目的地。2015 年进军出境中短途度假包机市场，参与多个包机项目。 经过十年发展，凭借强大资源整合与渠道运营能力，已成华北市场知名旅游产品批发商与渠道运营商。公司致力于汇聚旅游人才，整合优势资源，打造优质产品代理商与渠道经销商。公司坚持客户至上，提升服务质量，满足多样需求。鸿鹄旅游将不懈追求卓越、创新，为客户与合作伙伴创造更大价值，共迎美好未来。",
     "email": "hhtour@163.com",
-    "businessHours": "周一至周日 9:00-18:00",
-    "description": "北京鸿鹄国际旅行社有限公司成立于2013年，是一家专业的旅游服务企业，注册资本500万元。公司专注于国内旅游、入境旅游和出境旅游业务，尤其以云南旅游产品为核心优势。作为华北地区领先的云南旅游产品供应商，我们秉承\"品质至上、服务第一\"的理念，致力于为客户提供高品质、个性化的旅游体验。",
-    "aboutImage": "",
-    "logo": "",
-    "wechatQr": "",
-    "videoQr": "",
+    "logo": "4065f4cd53c84f08894b3913b35823ce.png",
+    "name": "北京鸿鹄国际旅行社有限公司",
+    "phone": "010-63456151",
     "stats": [
-      { "number": "10+", "label": "年行业经验" },
-      { "number": "50万+", "label": "服务游客" },
-      { "number": "200+", "label": "精品线路" },
-      { "number": "99%", "label": "客户满意度" }
-    ]
-  }
+      {
+        "label": "年行业经验",
+        "number": "10+"
+      },
+      {
+        "label": "服务游客",
+        "number": "50万+"
+      },
+      {
+        "label": "精品线路",
+        "number": "200+"
+      },
+      {
+        "label": "客户满意度",
+        "number": "99%+"
+      }
+    ],
+    "videoQr": "5acfae738cde47eb9faa1d53883e78c5.jpg",
+    "wechatQr": "a3d935bdf307406a94f9dc49659ed712.jpg"
+  },
+  "products": [
+    {
+      "days": "6天/8天/10天/12天",
+      "description": "",
+      "destination": "昆明大理丽江 及延伸线路",
+      "features": [
+        "四钻+五钻酒店",
+        "三表演",
+        "纯玩团一价全含0自费"
+      ],
+      "featuresDetail": [],
+      "id": 1,
+      "image": "6ac5e3d2e7774f5ca88f46d5d0933bcb.jpg",
+      "poster": "c0104da80926474db078b2bd465dfff1.jpg",
+      "price": "4260元起",
+      "title": "云南 | 纯玩大咖秀"
+    },
+    {
+      "days": "6天/8天/10天/12天",
+      "description": "",
+      "destination": "昆明大理丽江 及延伸线路",
+      "features": [
+        "一价全含0自费",
+        "四钻+五钻酒店",
+        "小团超省心"
+      ],
+      "featuresDetail": [],
+      "id": 2,
+      "image": "c997b570939344a2926a6c7c354e6ae8.jpg",
+      "poster": "33e3037c6f5f4334add21df59e881206.jpg",
+      "price": "4390元起",
+      "title": "云南 | 喜洋洋"
+    },
+    {
+      "id": 3,
+      "image": "9b12859eba364171852530c16250502b.jpg",
+      "poster": "52ecefbab8b84597937c93bbb127f470.jpg",
+      "title": "云南 | 六福",
+      "destination": "昆明大理丽江 及延伸线路",
+      "price": "5590元起",
+      "days": "6天/8天/10天/12天",
+      "features": [
+        "6人精品小团",
+        "豪华五钻酒店",
+        "保证玉龙雪山大索道"
+      ],
+      "description": "",
+      "featuresDetail": []
+    },
+    {
+      "days": "双飞8日",
+      "description": "",
+      "destination": "北疆+伊犁+独库",
+      "features": [
+        "自组团",
+        "专业领队",
+        "独库公路"
+      ],
+      "featuresDetail": [],
+      "id": 4,
+      "image": "d547ac9d00b34312ad6fa41006ce3669.jpg",
+      "poster": "59f38a3776fd487faf167ece4194e05d.jpg",
+      "price": "7299元起",
+      "title": "新疆 | 北疆大全景"
+    },
+    {
+      "days": "双飞10日",
+      "description": "",
+      "destination": "北疆+伊犁+独库",
+      "features": [
+        "真纯玩",
+        "自组团",
+        "1+1豪华大巴"
+      ],
+      "featuresDetail": [],
+      "id": 5,
+      "image": "e3c9f8fb566d48e59bd39ce92b0786f5.jpg",
+      "poster": "326d51486eeb43d0b9fd444447333feb.jpg",
+      "price": "10699元起",
+      "title": "新疆 | 奢享净界"
+    },
+    {
+      "days": "双飞8日 双飞10日",
+      "description": "",
+      "destination": "北疆+伊犁 及吐鲁番",
+      "features": [
+        "真纯玩",
+        "赠送旅拍",
+        "单人免房差"
+      ],
+      "featuresDetail": [],
+      "id": 1781504897353,
+      "image": "beec5d4b4db34133a6a49df45c1feb90.jpg",
+      "poster": "69d0cb43a20246f786d5a4252ef4ea8b.jpg",
+      "price": "7780元起",
+      "title": "新疆 | 臻享北疆"
+    }
+  ]
 }

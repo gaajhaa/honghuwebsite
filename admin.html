@@ -221,6 +221,10 @@
                             <label>公司简介</label>
                             <textarea name="description" id="companyDesc" rows="5"></textarea>
                         </div>
+                        <div class="form-group">
+                            <label>网站公告（显示在首页公告栏）</label>
+                            <textarea name="announcement" id="companyAnnouncement" rows="3" placeholder="输入公告内容，留空则不显示公告栏"></textarea>
+                        </div>
                         <button type="submit" class="btn btn-primary">保存修改</button>
                     </form>
                 </div>
@@ -971,6 +975,7 @@
             document.getElementById('companyHours').value = data.company.businessHours;
             document.getElementById('companyAddress').value = data.company.address;
             document.getElementById('companyDesc').value = data.company.description;
+            document.getElementById('companyAnnouncement').value = data.company.announcement || '';
 
             if (data.company.aboutImage) {
                 document.getElementById('aboutImagePreview').src = imgSrc(data.company.aboutImage);
@@ -996,8 +1001,8 @@
             var container = document.getElementById('statsEditor');
             container.innerHTML = stats.map(function(s, i) {
                 return '<div style="display: flex; gap: 1rem; margin-bottom: 1rem;">' +
-                    '<input type="text" value="' + s.number + '" placeholder="数值" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px" onchange="updateStat(' + i + ',\\'number\\',this.value)">' +
-                    '<input type="text" value="' + s.label + '" placeholder="标签" style="flex:2;padding:10px;border:1px solid #ddd;border-radius:6px" onchange="updateStat(' + i + ',\\'label\\',this.value)">' +
+                    '<input type="text" value="' + s.number + '" placeholder="数值" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px" onchange="updateStat(' + i + ',&quot;number&quot;,this.value)">' +
+                    '<input type="text" value="' + s.label + '" placeholder="标签" style="flex:2;padding:10px;border:1px solid #ddd;border-radius:6px" onchange="updateStat(' + i + ',&quot;label&quot;,this.value)">' +
                     '<button class="btn btn-danger btn-sm" onclick="removeStat(' + i + ')">删除</button></div>';
             }).join('');
         }
@@ -1104,6 +1109,7 @@
                 data.company.businessHours = document.getElementById('companyHours').value;
                 data.company.address = document.getElementById('companyAddress').value;
                 data.company.description = document.getElementById('companyDesc').value;
+                data.company.announcement = document.getElementById('companyAnnouncement').value;
                 await saveData(data);
                 alert('公司信息已保存！');
             } catch (err) {

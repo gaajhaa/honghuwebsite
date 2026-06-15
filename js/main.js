@@ -276,6 +276,20 @@ document.getElementById('posterViewer').addEventListener('dblclick', function() 
 
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 
+// ===== 公告栏渲染 =====
+function renderAnnouncement(company) {
+    try {
+        var text = (company && company.announcement) || '';
+        var el = document.getElementById('announcementText');
+        if (!el) return;
+        if (!text) { el.style.display = 'none'; return; }
+        el.style.display = 'inline-block';
+        // 单份文字写入，副本由 CSS ::after 拼接实现无缝滚动
+        el.setAttribute('data-text', text);
+        el.innerHTML = text;
+    } catch (err) { console.error('渲染公告栏失败：', err); }
+}
+
 // ===== 关于我们 =====
 function renderAbout(company) {
     try {
@@ -297,9 +311,6 @@ function renderContact(company) {
             '<div class="contact-item"><div class="contact-icon">📞</div><div><h4>联系电话</h4><p class="contact-text">' + (company.phone || '') + '</p></div></div>' +
             '<div class="contact-item"><div class="contact-icon">✉️</div><div><h4>电子邮箱</h4><p class="contact-text">' + (company.email || '') + '</p></div></div>' +
             '<div class="contact-item"><div class="contact-icon">🕐</div><div><h4>营业时间</h4><p class="contact-text">' + (company.businessHours || '') + '</p></div></div>';
-
-        document.getElementById('footerContact').innerHTML =
-            '<h3>联系信息</h3><p>电话：' + (company.phone || '') + '</p><p>邮箱：' + (company.email || '') + '</p><p>地址：' + (company.address || '') + '</p>';
 
         var placeholder = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23f5f5f5"/><text x="50%" y="50%" text-anchor="middle" fill="%23999" font-size="16" dy=".3em">请上传二维码</text></svg>';
         var wechatQr = document.getElementById('wechatQrImage');
@@ -333,6 +344,7 @@ async function init() {
     renderLogo(d);
     renderBanners(d.banners);
     renderProducts(d.products);
+    renderAnnouncement(d.company);
     renderAbout(d.company);
     renderContact(d.company);
     startSlideshow();
