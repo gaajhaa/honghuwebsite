@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北京鸿鹄国际旅行社有限公司</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== 公告栏 ===== */
+        .announcement-bar {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            background: linear-gradient(135deg, #e8f4fd 0%, #f0f7ff 50%, #e8f4fd 100%);
+            border-bottom: 1px solid #cce4f7;
+            padding: 10px 0;
+            position: relative;
+        }
+        .announcement-bar .container {
+            overflow: hidden;
+        }
+        .announcement-bar:hover .container {
+            overflow: visible;
+        }
+        .announcement-bar:hover .announcement-text {
+            animation-play-state: paused;
+            white-space: normal;
+        }
+        .announcement-bar:hover .announcement-text::after {
+            display: none;
+        }
+        .announcement-text {
+            display: inline-block;
+            color: #106eb8;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            animation: announcement-scroll 20s linear infinite;
+            padding: 0 40px;
+            cursor: default;
+        }
+        .announcement-text::before {
+            content: "📢 ";
+        }
+        .announcement-text::after {
+            content: attr(data-text);
+            padding-left: 3em;
+        }
+        @keyframes announcement-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <!-- 图片logo：从 localStorage 读取，如果没有则显示文字logo -->
+            <a href="#home" class="logo" id="logoContainer">
+                <img id="logoImage" src="" alt="鸿鹄国际旅行社" onerror="this.style.display='none'; document.getElementById('logoTextFallback').style.display='flex';">
+                <span class="logo-text" id="logoTextFallback" style="display:none;"><span>鸿鹄</span>国际旅行社</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#home" class="active">首页</a></li>
+                <li><a href="#products">旅游产品</a></li>
+                <li><a href="#about">关于我们</a></li>
+                <li><a href="#contact">联系我们</a></li>
+            </ul>
+            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+        </div>
+    </nav>
+
+    <!-- Hero轮播 -->
+    <section id="home" class="hero">
+        <div class="hero-slides" id="heroSlides"></div>
+        <div class="hero-dots" id="heroDots"></div>
+    </section>
+
+    <!-- 热门产品 -->
+    <section id="products" class="section">
+        <div class="container">
+            <h2 class="section-title">热门旅游产品</h2>
+            <div class="products-grid" id="productsGrid"></div>
+        </div>
+    </section>
+
+    <!-- 公告栏 -->
+    <div class="announcement-bar">
+        <div class="container">
+            <div class="announcement-text" id="announcementText"></div>
+        </div>
+    </div>
+
+    <!-- 关于我们 -->
+    <section id="about" class="section about-section">
+        <div class="container">
+            <h2 class="section-title">关于我们</h2>
+            <div class="about-content">
+                <div class="about-text" id="aboutText"></div>
+                <div class="about-image" id="aboutImage"></div>
+            </div>
+            <div class="stats" id="statsGrid"></div>
+        </div>
+    </section>
+
+    <!-- 联系我们 & 二维码 -->
+    <section id="contact" class="section contact-section">
+        <div class="container">
+            <h2 class="section-title">联系我们</h2>
+            <div class="contact-content">
+                <div class="contact-info" id="contactInfo"></div>
+                <div class="qr-section" id="qrSection">
+                    <!-- 公众号二维码 -->
+                    <div class="qr-card">
+                        <img id="wechatQrImage" src="" alt="公众号二维码">
+                        <h4>关注公众号</h4>
+                        <p>获取最新旅游资讯和优惠</p>
+                    </div>
+                    <!-- 视频号二维码 -->
+                    <div class="qr-card">
+                        <img id="videoQrImage" src="" alt="视频号二维码">
+                        <h4>关注视频号</h4>
+                        <p>观看精彩旅行视频</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-bottom"><p>&copy; 2026 北京鸿鹄国际旅行社有限公司 版权所有</p></div>
+    </footer>
+
+    <!-- 产品海报弹窗（全屏查看 + 滚轮缩放 + 拖动平移） -->
+    <div id="productModal" class="modal">
+        <div class="modal-content poster-modal">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="poster-viewer" id="posterViewer">
+                <img id="modalImage" class="poster-image" src="" alt="海报" draggable="false">
+            </div>
+            <div class="poster-toolbar" id="posterToolbar">滚轮缩放 · 拖动平移 · 点击空白或右上角 × 关闭</div>
+        </div>
+    </div>
+
+    
+    <script src="js/main.js"></script>
+</body>
+</html>
