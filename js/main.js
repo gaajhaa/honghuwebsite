@@ -73,8 +73,9 @@ function normalizeData(data) {
 
 // ===== 读取数据（优先API，降级localStorage，最后默认） =====
 async function getWebsiteData() {
+    // 优先从 data.json 文件读取（本地和 GitHub Pages 都支持）
     try {
-        var resp = await fetch('/api/data');
+        var resp = await fetch('data.json');
         if (resp.ok) {
             var json = await resp.json();
             if (json && json.banners) {
@@ -82,8 +83,19 @@ async function getWebsiteData() {
             }
         }
     } catch (e) {
-        console.warn('API读取失败，尝试localStorage:', e.message);
+        console.warn('data.json读取失败：', e.message);
     }
+    // 兼容本地 Flask 服务器
+    try {
+        var resp2 = await fetch('/api/data');
+        if (resp2.ok) {
+            var json2 = await resp2.json();
+            if (json2 && json2.banners) {
+                return normalizeData(json2);
+            }
+        }
+    } catch (e) {}
+    // 降级：localStorage
     var stored = localStorage.getItem('hh_website_content');
     if (stored) {
         try {
